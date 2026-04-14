@@ -1,4 +1,4 @@
-// login.js - Sin MFA (versión rápida y funcional)
+// login.js - Sin MFA, con renovación mejorada
 
 console.log("login.js cargado");
 
@@ -7,33 +7,40 @@ const API_URL = "https://refugio-animales.onrender.com";
 
 function iniciarRenovacionToken() {
     if (intervaloRenovacion) clearInterval(intervaloRenovacion);
+    
     intervaloRenovacion = setInterval(async () => {
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) return;
+        
         try {
             const res = await fetch(API_URL + "/api/usuarios/refresh", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ refreshToken })
             });
+            
             const data = await res.json();
             if (res.ok && data.accessToken) {
                 localStorage.setItem("token", data.accessToken);
-                console.log("✅ Token renovado");
+                console.log("✅ Token renovado correctamente");
+            } else {
+                console.log("⚠️ No se pudo renovar el token");
             }
         } catch (error) {
             console.error("Error renovando token:", error);
         }
-    }, 20 * 60 * 1000);
+    }, 15 * 60 * 1000); // Cada 15 minutos
 }
 
 function generarCaptcha() {
     const num1 = Math.floor(Math.random() * 10) + 1;
     const num2 = Math.floor(Math.random() * 10) + 1;
     const resultado = num1 + num2;
+    
     const captchaNum1 = document.getElementById("captchaNum1");
     const captchaNum2 = document.getElementById("captchaNum2");
     const captchaResultado = document.getElementById("captchaResultado");
+    
     if (captchaNum1) captchaNum1.textContent = num1;
     if (captchaNum2) captchaNum2.textContent = num2;
     if (captchaResultado) captchaResultado.value = resultado;
@@ -41,6 +48,24 @@ function generarCaptcha() {
 
 document.addEventListener("DOMContentLoaded", () => {
     generarCaptcha();
+    
+    // Verificar si ya hay una sesión activa
+    const token = localStorage.getItem("token");
+    const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+    
+    if (token && usuario.id) {
+        console.log("🔐 Sesión existente encontrada");
+        iniciarRenovacionToken();
+        
+        // Redirigir según rol
+        if (usuario.rol === "admin") {
+            window.location.href = "admin.html";
+        } else {
+            window.location.href = "index.html";
+        }
+        return;
+    }
+    
     const form = document.getElementById("loginForm");
     if (!form) return;
 
@@ -76,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await window.API.login(email, password);
 
             if (!data.accessToken || !data.usuario) {
-                throw new Error("Respuesta inválida");
+                throw new Error("Respuesta inválida del servidor");
             }
 
             localStorage.setItem("token", data.accessToken);
@@ -86,7 +111,9 @@ document.addEventListener("DOMContentLoaded", () => {
             iniciarRenovacionToken();
 
             const rol = String(data.usuario.rol || "").toLowerCase().trim();
-            if (rol === "admin") {
+            console.log("👑 Rol:", rol);
+
+            if (rol === "admin" || rol === "superadmin") {
                 window.location.href = "admin.html";
             } else {
                 window.location.href = "index.html";
