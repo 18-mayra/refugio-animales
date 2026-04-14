@@ -1,6 +1,33 @@
-// login.js - Inicio de sesión
+// login.js - Inicio de sesión con renovación automática
 
 console.log("login.js cargado");
+
+let intervaloRenovacion = null;
+
+function iniciarRenovacionToken() {
+    if (intervaloRenovacion) clearInterval(intervaloRenovacion);
+    
+    intervaloRenovacion = setInterval(async () => {
+        const refreshToken = localStorage.getItem("refreshToken");
+        if (!refreshToken) return;
+        
+        try {
+            const res = await fetch("https://refugio-animales.onrender.com/api/usuarios/refresh", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refreshToken })
+            });
+            
+            const data = await res.json();
+            if (res.ok && data.accessToken) {
+                localStorage.setItem("token", data.accessToken);
+                console.log("✅ Token renovado automáticamente");
+            }
+        } catch (error) {
+            console.error("Error renovando token:", error);
+        }
+    }, 20 * 60 * 1000); // Cada 20 minutos
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     generarCaptcha();
@@ -47,6 +74,9 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("token", data.accessToken);
             localStorage.setItem("refreshToken", data.refreshToken);
             localStorage.setItem("usuario", JSON.stringify(data.usuario));
+
+            // Iniciar renovación automática
+            iniciarRenovacionToken();
 
             const rol = String(data.usuario.rol || "").toLowerCase().trim();
 
