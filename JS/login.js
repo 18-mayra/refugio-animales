@@ -48,61 +48,49 @@ function generarCaptcha() {
 
 // Mostrar modal para ingresar código MFA
 function mostrarModalMFA() {
-    return new Promise((resolve) => {
-        // Crear modal si no existe
-        let modal = document.getElementById("mfaModal");
-        if (!modal) {
-            modal = document.createElement("div");
-            modal.id = "mfaModal";
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.5);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 9999;
-            `;
-            modal.innerHTML = `
-                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 350px; width: 90%;">
-                    <h3>🔐 Código de verificación</h3>
-                    <p>Se ha enviado un código de 6 dígitos a tu correo.</p>
-                    <input type="text" id="mfaCodeInput" placeholder="Código de 6 dígitos" maxlength="6" style="width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ccc; border-radius: 8px; text-align: center; font-size: 1.2rem;">
-                    <button id="mfaSubmitBtn" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Verificar</button>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-        
-        modal.style.display = "flex";
-        
-        const input = document.getElementById("mfaCodeInput");
-        const btn = document.getElementById("mfaSubmitBtn");
-        
-        // Limpiar input al abrir
-        input.value = "";
-        
-        const cleanup = () => {
-            modal.style.display = "none";
-            input.removeEventListener("keypress", handleKeyPress);
-            btn.removeEventListener("click", handleClick);
-        };
-        
-        const handleClick = () => {
-            const code = input.value.trim();
-            if (code && code.length === 6) {
-                cleanup();
-                resolve(code);
-            } else {
-                alert("Ingresa un código de 6 dígitos");
+    return new Promise((resolve, reject) => {
+        try {
+            let modal = document.getElementById("mfaModal");
+            if (!modal) {
+                modal = document.createElement("div");
+                modal.id = "mfaModal";
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 9999;
+                `;
+                modal.innerHTML = `
+                    <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 350px; width: 90%;">
+                        <h3>🔐 Código de verificación</h3>
+                        <p>Se ha enviado un código de 6 dígitos a tu correo.</p>
+                        <input type="text" id="mfaCodeInput" placeholder="Código de 6 dígitos" maxlength="6" style="width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ccc; border-radius: 8px; text-align: center; font-size: 1.2rem;">
+                        <button id="mfaSubmitBtn" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Verificar</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
             }
-        };
-        
-        const handleKeyPress = (e) => {
-            if (e.key === "Enter") {
+            
+            modal.style.display = "flex";
+            
+            const input = document.getElementById("mfaCodeInput");
+            const btn = document.getElementById("mfaSubmitBtn");
+            input.value = "";
+            input.focus();
+            
+            const cleanup = () => {
+                modal.style.display = "none";
+                input.removeEventListener("keypress", handleKeyPress);
+                btn.removeEventListener("click", handleClick);
+            };
+            
+            const handleClick = () => {
                 const code = input.value.trim();
                 if (code && code.length === 6) {
                     cleanup();
@@ -110,12 +98,25 @@ function mostrarModalMFA() {
                 } else {
                     alert("Ingresa un código de 6 dígitos");
                 }
-            }
-        };
-        
-        input.addEventListener("keypress", handleKeyPress);
-        btn.addEventListener("click", handleClick);
-        input.focus();
+            };
+            
+            const handleKeyPress = (e) => {
+                if (e.key === "Enter") {
+                    const code = input.value.trim();
+                    if (code && code.length === 6) {
+                        cleanup();
+                        resolve(code);
+                    } else {
+                        alert("Ingresa un código de 6 dígitos");
+                    }
+                }
+            };
+            
+            input.addEventListener("keypress", handleKeyPress);
+            btn.addEventListener("click", handleClick);
+        } catch (error) {
+            reject(error);
+        }
     });
 }
 
@@ -185,13 +186,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(mfaData.error || "Error al enviar código MFA");
             }
 
-            // Mostrar el código en una alerta (para depuración)
+            // Mostrar el código en una alerta
             if (mfaData.debug) {
-                alert(`🔐 Tu código MFA es: ${mfaData.debug}\n\n(Revisa también tu correo)`);
+                alert(`🔐 TU CÓDIGO MFA ES: ${mfaData.debug}\n\nIngrésalo en el siguiente paso.`);
             }
 
-            // 3. MFA - MOSTRAR MODAL PARA INGRESAR CÓDIGO
-            const codigo = await mostrarModalMFA();
+            // 3. MFA - OBTENER CÓDIGO DEL USUARIO (modal o prompt)
+            let codigo = null;
+            
+            try {
+                codigo = await mostrarModalMFA();
+            } catch (modalError) {
+                console.warn("Modal falló, usando prompt:", modalError);
+                codigo = prompt("🔐 Ingresa el código MFA de 6 dígitos:");
+            }
+            
+            if (!codigo || codigo.length !== 6) {
+                throw new Error("Código MFA inválido");
+            }
 
             // 4. MFA - VERIFICAR CÓDIGO
             console.log("🔍 Verificando código MFA...");
