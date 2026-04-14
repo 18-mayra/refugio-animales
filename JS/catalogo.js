@@ -10,6 +10,8 @@
     let animalesGlobal = [];
     let timeoutBusqueda = null;
 
+    const API_URL = "https://refugio-animales.onrender.com";
+
     function escaparHTML(texto) {
         if (!texto) return "";
         return texto.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -24,18 +26,12 @@
 
     function getImagenUrl(imagenUrl) {
         if (!imagenUrl || imagenUrl === '/img/default.png') {
-            return TIPO_ANIMAL === "Perro" ? "http://localhost:5500/img/perro.png" : "http://localhost:5500/img/gato.png";
+            return `/img/${TIPO_ANIMAL === "Perro" ? "perro.png" : "gato.png"}`;
         }
-        if (imagenUrl.startsWith('/uploads/')) {
-            return `http://localhost:3000${imagenUrl}`;
-        }
-        if (imagenUrl.startsWith('img/')) {
-            return `http://localhost:5500/${imagenUrl}`;
-        }
-        if (imagenUrl.startsWith('http')) {
-            return imagenUrl;
-        }
-        return `http://localhost:5500/img/perro.png`;
+        if (imagenUrl.startsWith('/uploads/')) return imagenUrl;
+        if (imagenUrl.startsWith('img/')) return imagenUrl;
+        if (imagenUrl.startsWith('http')) return imagenUrl;
+        return `/img/perro.png`;
     }
 
     function mostrarLoader(mostrar) { if (loader) loader.classList.toggle("hidden", !mostrar); }
@@ -60,7 +56,7 @@
         resultadosDiv.innerHTML = `<div class="animales-grid">${animales.map(animal => `
             <div class="animal-card">
                 <div class="animal-img">
-                    <img src="${getImagenUrl(animal.imagen_url)}" alt="${escaparHTML(animal.nombre)}" onerror="this.src='http://localhost:5500/img/${TIPO_ANIMAL === "Perro" ? "perro" : "gato"}.png'">
+                    <img src="${getImagenUrl(animal.imagen_url)}" alt="${escaparHTML(animal.nombre)}" onerror="this.src='/img/${TIPO_ANIMAL === "Perro" ? "perro.png" : "gato.png"}'">
                 </div>
                 <div class="animal-info">
                     <h3>${escaparHTML(animal.nombre)}</h3>
