@@ -1,24 +1,16 @@
 const mysql = require("mysql2");
 
 const pool = mysql.createPool({
-    host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "refugio_animales",
-    port: process.env.DB_PORT || 3307,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: parseInt(process.env.DB_PORT) || 3306,
+    ssl: {
+        rejectUnauthorized: false
+    },
     waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-});
-
-// Verificar conexión (opcional)
-pool.getConnection((err, connection) => {
-    if (err) {
-        console.error("❌ Error MySQL:", err);
-    } else {
-        console.log("✅ Conectado a MySQL");
-        connection.release();
-    }
+    connectionLimit: 10
 });
 
 module.exports = pool;
