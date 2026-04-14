@@ -1,43 +1,48 @@
-// utils/mailer.js - Gmail con App Password
-require("dotenv").config();
+// utils/mailer.js - Gmail con OAuth2
 const nodemailer = require("nodemailer");
+const { google } = require("googleapis");
 
-console.log("📧 Configuración de correo:");
-console.log("   EMAIL_USER:", process.env.EMAIL_USER);
-console.log("   EMAIL_PASS:", process.env.EMAIL_PASS ? "✅ Configurada" : "❌ No configurada");
+const CLIENT_ID = process.env.GMAIL_CLIENT_ID;
+const CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET;
+const REDIRECT_URI = "https://developers.google.com/oauthplayground";
+const REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN;
+const USER_EMAIL = process.env.GMAIL_USER;
 
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
+const oAuth2Client = new google.auth.OAuth2(
+    CLIENT_ID,
+    CLIENT_SECRET,
+    REDIRECT_URI
+);
 
-// Verificar conexión
-transporter.verify((error, success) => {
-    if (error) {
-        console.error("❌ Error de conexión con Gmail:", error.message);
-    } else {
-        console.log("✅ Conexión con Gmail establecida correctamente");
-    }
-});
+oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 
 const enviarCorreo = async (para, asunto, texto) => {
     try {
+        const accessToken = await oAuth2Client.getAccessToken();
+        
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                type: "OAuth2",
+                user: USER_EMAIL,
+                clientId: CLIENT_ID,
+                clientSecret: CLIENT_SECRET,
+                refreshToken: REFRESH_TOKEN,
+                accessToken: accessToken.token
+            }
+        });
+
         const info = await transporter.sendMail({
-            from: `"Refugio de Animales 🐾" <${process.env.EMAIL_USER}>`,
+            from: `"Refugio de Animales" <${USER_EMAIL}>`,
             to: para,
             subject: asunto,
             text: texto
         });
+
         console.log("✅ Correo enviado a:", para);
-        console.log("   Message ID:", info.messageId);
         return true;
     } catch (error) {
-        console.error("❌ Error al enviar correo:", error.message);
+        console.error("❌ Error:", error.message);
         return false;
     }
 };
