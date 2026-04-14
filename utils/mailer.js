@@ -42,7 +42,7 @@ const enviarCorreo = async (para, asunto, texto) => {
         console.log("✅ Correo enviado a:", para);
         return true;
     } catch (error) {
-        console.error("❌ Error:", error.message);
+        console.error("❌ Error OAuth2:", error.message);
         return false;
     }
 };

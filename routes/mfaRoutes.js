@@ -14,25 +14,34 @@ router.post("/send", auth, async (req, res) => {
         [req.usuario.id],
         async (err, result) => {
             if (err || result.length === 0) {
+                console.error("❌ Usuario no encontrado");
                 return res.status(500).json({ error: "Usuario no encontrado" });
             }
 
             const usuarioEmail = result[0].email;
+            console.log("📧 Enviando código a:", usuarioEmail);
 
             db.query(
                 "INSERT INTO mfa_codes (user_id, code, expires_at) VALUES (?, ?, ?)",
                 [req.usuario.id, code, expires],
                 async (err2) => {
                     if (err2) {
-                        console.error(err2);
+                        console.error("❌ Error guardando código:", err2);
                         return res.status(500).json({ error: "Error guardando código" });
                     }
 
-                    await enviarCorreo(
+                    console.log("📧 Intentando enviar correo...");
+                    const enviado = await enviarCorreo(
                         usuarioEmail,
-                        "🔐 Código de verificación",
-                        `Tu código MFA es: ${code}\n\nExpira en 5 minutos.`
+                        "🔐 Código de verificación - Refugio",
+                        `Tu código MFA es: ${code}\n\nExpira en 5 minutos.\n\nSi no solicitaste esto, ignora el mensaje.\n\nRefugio de Animales 🐾`
                     );
+
+                    if (enviado) {
+                        console.log("✅ Correo enviado a:", usuarioEmail);
+                    } else {
+                        console.error("❌ Falló el envío a:", usuarioEmail);
+                    }
 
                     res.json({ 
                         message: "Código enviado al correo",
@@ -56,7 +65,7 @@ router.post("/verify", auth, (req, res) => {
         [req.usuario.id, code],
         (err, result) => {
             if (err) {
-                console.error(err);
+                console.error("Error verificando MFA:", err);
                 return res.status(500).json({ error: "Error del servidor" });
             }
 
