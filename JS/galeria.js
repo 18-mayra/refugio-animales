@@ -1,60 +1,40 @@
-// 📸 GALERÍA MULTIMEDIA - Videos e Imágenes
+// galeria.js - Galería de animales
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://refugio-animales.onrender.com";
 
-// Imágenes destacadas (pueden venir de la BD)
-const imagenesDestacadas = [
-    { url: "img/perro.png", titulo: "Max - Buscando hogar", descripcion: "Labrador de 2 años" },
-    { url: "img/perro2.png", titulo: "Luna - Energía pura", descripcion: "Husky de 1 año" },
-    { url: "img/gato.png", titulo: "Simba - Cariñoso", descripcion: "Gato naranja de 3 años" },
-    { url: "img/gato2.png", titulo: "Misi - Tranquila", descripcion: "Gatita de 2 años" },
-    { url: "img/perro.png", titulo: "Rocky - Guardián", descripcion: "Pastor Alemán" },
-    { url: "img/gato.png", titulo: "Tom - Aventurero", descripcion: "Gato gris" }
-];
+document.addEventListener("DOMContentLoaded", async () => {
+    const galeriaGrid = document.querySelector(".galeria-grid");
+    if (!galeriaGrid) return;
 
-function renderizarImagenes() {
-    const grid = document.getElementById("imagenesGrid");
-    if (!grid) return;
-    
-    grid.innerHTML = imagenesDestacadas.map(img => `
-        <div class="imagen-item" onclick="abrirModal('${API_URL}${img.url}', '${img.titulo}', '${img.descripcion}')">
-            <img src="${API_URL}${img.url}" alt="${img.titulo}">
-            <div class="imagen-overlay">
-                <h3>${img.titulo}</h3>
-                <p>${img.descripcion}</p>
-            </div>
-        </div>
-    `).join('');
-}
+    try {
+        const response = await fetch(API_URL + "/animales");
+        const animales = await response.json();
 
-function abrirModal(imagenUrl, titulo, descripcion) {
-    const modal = document.getElementById("modalImagen");
-    const modalImg = document.getElementById("modalImg");
-    const modalCaption = document.getElementById("modalCaption");
-    
-    if (!modal || !modalImg) return;
-    
-    modal.style.display = "block";
-    modalImg.src = imagenUrl;
-    modalCaption.innerHTML = `<strong>${titulo}</strong><br>${descripcion}`;
-}
-
-function cerrarModal() {
-    const modal = document.getElementById("modalImagen");
-    if (modal) modal.style.display = "none";
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    renderizarImagenes();
-    
-    // Cerrar modal al hacer clic fuera
-    window.onclick = function(event) {
-        const modal = document.getElementById("modalImagen");
-        if (event.target === modal) {
-            modal.style.display = "none";
+        if (!animales || animales.length === 0) {
+            galeriaGrid.innerHTML = "<p>No hay animales disponibles</p>";
+            return;
         }
-    };
-});
 
-window.abrirModal = abrirModal;
-window.cerrarModal = cerrarModal;
+        galeriaGrid.innerHTML = animales.map(animal => {
+            let imgUrl = animal.imagen_url || `/img/${animal.tipo === "Perro" ? "perro.png" : "gato.png"}`;
+            if (imgUrl.startsWith('/uploads/')) imgUrl = API_URL + imgUrl;
+            
+            return `
+                <div class="galeria-item">
+                    <img src="${imgUrl}" alt="${animal.nombre}" onerror="this.src='/img/perro.png'">
+                    <div class="galeria-info">
+                        <h3>${animal.nombre}</h3>
+                        <p>${animal.raza || "Raza desconocida"}</p>
+                        <p>${animal.edad || "?"} años</p>
+                        <span class="badge ${animal.estado === "Disponible" ? "disponible" : "adoptado"}">
+                            ${animal.estado || "Disponible"}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    } catch (error) {
+        console.error("Error cargando galería:", error);
+        galeriaGrid.innerHTML = "<p>❌ Error al cargar la galería</p>";
+    }
+});

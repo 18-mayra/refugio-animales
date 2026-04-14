@@ -3,140 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galería Multimedia - Refugio</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/animations.css">
-    <link rel="stylesheet" href="css/galeria.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>Galería - Refugio</title>
+    <link rel="stylesheet" href="CSS/styles.css">
+    <link rel="stylesheet" href="CSS/base.css">
+    <link rel="stylesheet" href="CSS/animations.css">
 </head>
 <body>
 
-    <!--<script src="js/authGuard.js"></script>
-    <script>protegerPagina();</script>-->
-
-    <header>
+<header>
     <nav class="menu" aria-label="Menú principal">
         <div class="logo">🐾 Refugio</div>
-
-        <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
-
+        <button class="menu-toggle" id="menuToggle">☰</button>
         <ul class="menu-links" id="menuLinks">
             <li><a href="index.html">Inicio</a></li>
-
             <li class="submenu">
-                <button class="submenu-btn" id="submenuBtn">Catálogo ▾</button>
-                <ul class="submenu-links" id="submenuLinks">
+                <button class="submenu-btn">Catálogo ▾</button>
+                <ul class="submenu-links">
                     <li><a href="perros.html">Perros</a></li>
                     <li><a href="gatos.html">Gatos</a></li>
                 </ul>
             </li>
-
             <li><a href="galeria.html">Galería</a></li>
             <li><a href="contactanos.html">Contáctanos</a></li>
             <li><a href="refugio.html">Sobre el Refugio</a></li>
-
             <li class="login" id="authLink"></li>
         </ul>
     </nav>
 </header>
 
-    <main>
-        <section class="galeria-header">
-            <h1>📸 Galería Multimedia</h1>
-            <p>Videos e imágenes de nuestros animales rescatados</p>
-        </section>
-
-        <!-- SECCIÓN DE VIDEOS -->
-       <section class="videos-section">
-    <h2>🎥 Videos que inspiran</h2>
-    <div class="videos-grid">
-           <!-- Canelo, el perro fiel -->
-        <p>🐕 Canelo, el perro fiel - Una historia de lealtad</p>
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/umI5AtvCtm0" 
-                    title="Canelo, El Perro Fiel" 
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                    referrerpolicy="strict-origin-when-cross-origin" 
-                    allowfullscreen>
-            </iframe>
-        </div>
-
-        <!-- Perro y gato jugando -->
-         <p>🐕🐈 Amistad entre perros y gatos</p>
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/ZMgiiU-mMww" 
-                    title="Perro y gato jugando" 
-                    frameborder="0" 
-                    allowfullscreen>
-            </iframe>
-        </div>
-
-        <!-- GATITOS BEBÉS -->
-          <p>😻 Gatitos bebés - Momentos tiernos y divertidos</p>
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/u0XHVssfsYM" 
-                    title="Gatitos Bebés Tiernos y Graciosos" 
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                    allowfullscreen>
-            </iframe>
-        </div>
+<main>
+    <section class="galeria-header">
+        <h1>📸 Galería de Animales</h1>
+        <p>Conoce a nuestros animales rescatados</p>
     </section>
-        <!--imagenes-->
-        <section class="imagenes-section">
-    <h2>📷 Momentos especiales</h2>
-    <div class="imagenes-grid">
-        <div class="imagen-item">
-            <img src="http://localhost:5500/img/perro.png" alt="Max" onerror="this.src='https://via.placeholder.com/280x180?text=Max'">
-            <h3>Max</h3>
-            <p>Labrador de 2 años - Buscando hogar</p>
-        </div>
-        <div class="imagen-item">
-            <img src="http://localhost:5500/img/perro2.png" alt="Luna" onerror="this.src='https://via.placeholder.com/280x180?text=Luna'">
-            <h3>Luna</h3>
-            <p>Husky de 1 año - Energía pura</p>
-        </div>
-        <div class="imagen-item">
-            <img src="http://localhost:5500/img/gato.png" alt="Simba" onerror="this.src='https://via.placeholder.com/280x180?text=Simba'">
-            <h3>Simba</h3>
-            <p>Gato naranja de 3 años - Cariñoso</p>
-        </div>
-        <div class="imagen-item">
-            <img src="http://localhost:5500/img/gato2.png" alt="Misi" onerror="this.src='https://via.placeholder.com/280x180?text=Misi'">
-            <h3>Misi</h3>
-            <p>Gatita de 2 años - Tranquila</p>
-        </div>
-        <div class="imagen-item">
-            <img src="http://localhost:5500/img/perro.png" alt="Rocky" onerror="this.src='https://via.placeholder.com/280x180?text=Rocky'">
-            <h3>Rocky</h3>
-            <p>Pastor Alemán - Guardián</p>
+
+    <div class="galeria-container">
+        <div class="galeria-grid">
+            <!-- Las imágenes se cargarán con JS -->
         </div>
     </div>
-</section>
-    </main>
+</main>
 
-    <footer>
-        <div class="footer-content">
-            <div class="footer-section">
-                <h3>🐾 Refugio de Animales</h3>
-                <p>Dándoles una segunda oportunidad</p>
-            </div>
-            <div class="footer-section">
-                <h3>Contacto</h3>
-                <p>📞 (449) 123-4567</p>
-                <p>✉️ refugio@animales.com</p>
-            </div>
+<footer>
+    <div class="footer-content">
+        <div class="footer-section">
+            <h3>🐾 Refugio de Animales</h3>
+            <p>Dándoles una segunda oportunidad</p>
         </div>
-        <div class="footer-bottom">
-            <p>&copy; 2026 Refugio de Animales</p>
+        <div class="footer-section">
+            <h3>Contacto</h3>
+            <p>📞 (449) 123-4567</p>
+            <p>✉️ refugio@animales.com</p>
         </div>
-    </footer>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2026 Refugio de Animales</p>
+    </div>
+</footer>
 
-    <script src="JS/api.js"></script>
-    <script src="JS/auth.js"></script>
-    <script src="JS/menu.js"></script>
-    <script src="JS/galeria.js"></script>
+<script src="JS/api.js"></script>
+<script src="JS/auth.js"></script>
+<script src="JS/menu.js"></script>
+<script src="JS/galeria.js"></script>
 </body>
 </html>
