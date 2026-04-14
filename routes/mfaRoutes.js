@@ -5,16 +5,34 @@ const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
 
 // ===============================
+// VERIFICAR ESTADO DEL MFA
+// ===============================
+router.get("/status", auth, (req, res) => {
+    db.query(
+        "SELECT mfa_activado, secret_mfa FROM usuarios WHERE id = ?",
+        [req.usuario.id],
+        (err, result) => {
+            if (err || result.length === 0) {
+                return res.status(500).json({ error: "Error al obtener estado" });
+            }
+            
+            res.json({ 
+                activado: result[0].mfa_activado === 1,
+                tiene_secreto: result[0].secret_mfa !== null
+            });
+        }
+    );
+});
+
+// ===============================
 // ACTIVAR MFA (generar QR)
 // ===============================
 router.post("/activar", auth, async (req, res) => {
     try {
-        // Generar secreto
         const secret = speakeasy.generateSecret({
             name: `Refugio Animales (${req.usuario.email})`
         });
 
-        // Guardar secreto en la base de datos
         db.query(
             "UPDATE usuarios SET secret_mfa = ? WHERE id = ?",
             [secret.base32, req.usuario.id],
@@ -24,7 +42,6 @@ router.post("/activar", auth, async (req, res) => {
                     return res.status(500).json({ error: "Error al guardar secreto" });
                 }
 
-                // Generar código QR
                 const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
                 
                 res.json({
@@ -123,20 +140,6 @@ router.post("/verificar", auth, (req, res) => {
             }
         }
     );
-
-    // Verificar si el usuario tiene MFA activado
-router.get("/status", auth, (req, res) => {
-    db.query(
-        "SELECT mfa_activado FROM usuarios WHERE id = ?",
-        [req.usuario.id],
-        (err, result) => {
-            if (err || result.length === 0) {
-                return res.status(500).json({ error: "Error" });
-            }
-            res.json({ activado: result[0].mfa_activado === 1 });
-        }
-    );
-});
 });
 
 module.exports = router;
