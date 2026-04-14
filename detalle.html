@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle del Animal - Refugio</title>
+  <link rel="stylesheet" href="CSS/styles.css">
+  <link rel="stylesheet" href="CSS/base.css">
+  <link rel="stylesheet" href="CSS/animations.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+<header>
+    <nav class="menu" aria-label="Menú principal">
+        <div class="logo">🐾 Refugio</div>
+        <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
+        <ul class="menu-links" id="menuLinks">
+            <li><a href="index.html">Inicio</a></li>
+            <li class="submenu">
+                <button class="submenu-btn">Catálogo ▾</button>
+                <ul class="submenu-links">
+                    <li><a href="perros.html">Perros</a></li>
+                    <li><a href="gatos.html">Gatos</a></li>
+                </ul>
+            </li>
+            <li><a href="galeria.html">Galería</a></li>
+            <li><a href="contactanos.html">Contáctanos</a></li>
+            <li><a href="refugio.html">Sobre el Refugio</a></li>
+            <li class="login" id="authLink"></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <section class="detalle-header">
+        <h1>🐾 Información completa del animal</h1>
+        <p>Conoce todos los detalles de este maravilloso compañero</p>
+    </section>
+
+    <div id="detalle">Cargando...</div>
+</main>
+
+<footer>
+    <div class="footer-content">
+        <div class="footer-section">
+            <h3>🐾 Refugio de Animales</h3>
+            <p>Dándoles una segunda oportunidad</p>
+        </div>
+        <div class="footer-section">
+            <h3>Contacto</h3>
+            <p>📞 (449) 123-4567</p>
+            <p>✉️ refugio@animales.com</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2026 Refugio de Animales</p>
+    </div>
+</footer>
+
+
+<script src="JS/api.js"></script>
+<script src="JS/auth.js"></script>
+<script src="JS/menu.js"></script>
+<script src="JS/detalle.js"></script>
+</body>
+</html>

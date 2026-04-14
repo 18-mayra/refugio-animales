@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Administrador - Refugio</title>
+  <link rel="stylesheet" href="CSS/styles.css">
+  <link rel="stylesheet" href="CSS/base.css">
+  <link rel="stylesheet" href="CSS/animations.css">
+</head>
+<body class="admin-page">
+  
+  <script src="JS/authGuard.js"></script>
+  <script>soloAdmin();</script>
+
+<div class="admin-wrapper">
+<div class="admin-container">
+
+<h1>🐾 Panel de Administración</h1>
+
+<button id="btnCerrarSesion">🚪 Cerrar sesión</button>
+<hr>
+
+<form id="formAnimal" enctype="multipart/form-data">
+  <input type="hidden" id="id">
+
+  <label>Tipo:</label>
+  <select id="tipo">
+    <option value="Perro">Perro</option>
+    <option value="Gato">Gato</option>
+  </select><br><br>
+
+  <label>Nombre:</label>
+  <input type="text" id="nombre" required><br><br>
+
+  <label>Edad:</label>
+  <input type="number" id="edad"><br><br>
+
+  <label>Raza:</label>
+  <input type="text" id="raza"><br><br>
+
+  <label>Comportamiento:</label>
+  <input type="text" id="comportamiento"><br><br>
+
+  <label>Vacunas:</label>
+  <input type="text" id="vacunas"><br><br>
+
+  <label>Enfermedades:</label>
+  <input type="text" id="enfermedades"><br><br>
+
+  <label>Descripción:</label><br>
+  <textarea id="descripcion"></textarea><br><br>
+
+  <label>Estado:</label>
+  <select id="estado">
+    <option value="Disponible">Disponible</option>
+    <option value="Adoptado">Adoptado</option>
+  </select><br><br>
+
+  <!-- 🔥 CAMPO DE IMAGEN DENTRO DEL FORMULARIO -->
+  <div class="form-group">
+    <label>📸 Imagen del animal:</label>
+    <input type="file" id="imagen" accept="image/*">
+    <small>Formatos: JPG, PNG, GIF (máx 5MB)</small>
+  </div>
+
+  <button type="submit">💾 Guardar</button>
+</form>
+
+<hr>
+
+<h2>🔎 Buscar y Filtrar</h2>
+<input type="text" id="buscador" placeholder="Buscar por nombre o raza">
+
+<select id="filtroTipo">
+  <option value="">Todos los tipos</option>
+  <option value="Perro">Perros</option>
+  <option value="Gato">Gatos</option>
+</select>
+
+<select id="filtroEstado">
+  <option value="">Todos los estados</option>
+  <option value="Disponible">Disponibles</option>
+  <option value="Adoptado">Adoptados</option>
+</select>
+
+<button id="btnFiltrar">🔍 Filtrar</button>
+
+<hr>
+
+<h2>📋 Listado de Animales</h2>
+<div id="listaAnimales"></div>
+
+<h2>👥 Gestión de Usuarios</h2>
+<div id="usuarios"></div>
+
+<h2>🖥️ Sesiones activas</h2>
+<div id="sesiones"></div>
+
+<h2>🐾 Solicitudes de Adopción</h2>
+<div id="adopciones"></div>
+
+</div>
+</div>
+
+
+<script src="JS/api.js"></script>
+<script src="JS/auth.js"></script>
+<script src="JS/admin.js"></script>
+<script src="JS/menu.js"></script>
+</body>
+</html>

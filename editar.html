@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editar Animal - Refugio</title>
+  <link rel="stylesheet" href="CSS/styles.css">
+  <link rel="stylesheet" href="CSS/base.css">
+  <link rel="stylesheet" href="CSS/animations.css">
+</head>
+<body>
+
+  <script src="JS/authGuard.js"></script>
+  <script>soloAdmin();</script>
+
+  <header>
+    <nav class="menu">
+      <div class="logo">🐾 Refugio</div>
+      <ul class="menu-links">
+        <li><a href="admin.html">← Volver al Panel</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h1>✏️ Editar Animal</h1>
+
+    <form id="formEditar" enctype="multipart/form-data">
+      <input type="hidden" id="idAnimal">
+
+      <div class="form-group">
+        <label>📸 Imagen actual:</label>
+        <div id="imagenActual" style="margin: 10px 0;">
+          <img id="imgPreview" src="" alt="Imagen actual" style="max-width: 200px; max-height: 200px; border-radius: 10px;">
+        </div>
+        <label>🖼️ Cambiar imagen:</label>
+        <input type="file" id="imagen" accept="image/*">
+        <small>Formatos: JPG, PNG, GIF (máx 5MB)</small>
+      </div>
+
+      <div class="form-group">
+        <label>Tipo:</label>
+        <select id="tipo">
+          <option value="Perro">Perro</option>
+          <option value="Gato">Gato</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Nombre:</label>
+        <input type="text" id="nombre" required>
+      </div>
+
+      <div class="form-group">
+        <label>Edad (años):</label>
+        <input type="number" id="edad">
+      </div>
+
+      <div class="form-group">
+        <label>Raza:</label>
+        <input type="text" id="raza">
+      </div>
+
+      <div class="form-group">
+        <label>Comportamiento:</label>
+        <input type="text" id="comportamiento">
+      </div>
+
+      <div class="form-group">
+        <label>Vacunas:</label>
+        <input type="text" id="vacunas">
+      </div>
+
+      <div class="form-group">
+        <label>Enfermedades:</label>
+        <input type="text" id="enfermedades">
+      </div>
+
+      <div class="form-group">
+        <label>Descripción:</label>
+        <textarea id="descripcion" rows="4"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Estado:</label>
+        <select id="estado">
+          <option value="Disponible">✅ Disponible</option>
+          <option value="Adoptado">❤️ Adoptado</option>
+        </select>
+      </div>
+
+      <button type="submit">💾 Guardar cambios</button>
+      <button type="button" onclick="window.location.href='admin.html'" class="btn-cancelar">❌ Cancelar</button>
+    </form>
+  </main>
+
+  <script src="JS/api.js"></script>
+  <script src="JS/auth.js"></script>
+  <script src="JS/editar.js"></script>
+</body>
+</html>

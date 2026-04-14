@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo - Refugio de Animales</title>
+    <link rel="stylesheet" href="CSS/styles.css">
+    <link rel="stylesheet" href="CSS/base.css">
+    <link rel="stylesheet" href="CSS/animations.css">
+    <link rel="stylesheet" href="CSS/catalogo.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header>
+        <nav class="menu" aria-label="Menú principal">
+            <div class="logo">🐾 Refugio</div>
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
+            <ul class="menu-links" id="menuLinks">
+                <li><a href="index.html">Inicio</a></li>
+                <li class="submenu">
+                    <button class="submenu-btn">Catálogo ▾</button>
+                    <ul class="submenu-links">
+                        <li><a href="perros.html">Perros</a></li>
+                        <li><a href="gatos.html">Gatos</a></li>
+                    </ul>
+                </li>
+                <li><a href="galeria.html">Galería</a></li>
+                <li><a href="contactanos.html">Contáctanos</a></li>
+                <li><a href="refugio.html">Sobre el Refugio</a></li>
+                <li class="login" id="authLink"></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="catalogo-header">
+            <h1>🐾 Catálogo de Animales</h1>
+            <p>Conoce a todos nuestros animales que buscan un hogar</p>
+        </section>
+
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li aria-current="page">Catálogo</li>
+            </ul>
+        </nav>
+
+        <section class="filtros-section">
+            <h2>🔍 Buscar y Filtrar</h2>
+            <div class="buscador">
+                <input type="text" id="buscador" placeholder="Buscar por nombre o raza...">
+            </div>
+            <div class="filtros-group">
+                <select id="tipo">
+                    <option value="">🐾 Todos</option>
+                    <option value="Perro">🐕 Perros</option>
+                    <option value="Gato">🐈 Gatos</option>
+                </select>
+                <select id="edad">
+                    <option value="">📅 Todas las edades</option>
+                    <option value="1-4">🐶 1-4 años</option>
+                    <option value="5-8">🐕 5-8 años</option>
+                    <option value="9-14">🦮 9-14 años</option>
+                </select>
+                <select id="estado">
+                    <option value="">📋 Todos</option>
+                    <option value="Disponible">✅ Disponibles</option>
+                    <option value="Adoptado">❤️ Adoptados</option>
+                </select>
+                <button id="btnFiltrar" class="btn-filtrar">🔍 Aplicar Filtros</button>
+            </div>
+        </section>
+
+        <div id="loader" class="loader hidden">Cargando...</div>
+        <section id="resultados" class="resultados-section"></section>
+        <div id="paginacion" class="paginacion-container"></div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>🐾 Refugio de Animales</h3>
+                <p>Dándoles una segunda oportunidad</p>
+            </div>
+            <div class="footer-section">
+                <h3>Contacto</h3>
+                <p>📞 (449) 123-4567</p>
+                <p>✉️ refugio@animales.com</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Refugio de Animales</p>
+        </div>
+    </footer>
+
+    <script>
+        const API_URL = "http://localhost:3000";
+    </script>
+
+    <script src="JS/api.js"></script>
+    <script src="JS/auth.js"></script>
+    <script src="JS/menu.js"></script>
+    <script src="JS/catalogo.js"></script>
+
+</body>
+</html>

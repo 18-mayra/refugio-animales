@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refugio</title>
+
+    <link rel="stylesheet" href="CSS/styles.css">
+    <link rel="stylesheet" href="CSS/base.css">
+    <link rel="stylesheet" href="CSS/animations.css">
+</head>
+<body>
+
+<!-- MENÚ -->
+<header>
+    <nav class="menu" aria-label="Menú principal">
+        <div class="logo">🐾 Refugio</div>
+
+        <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
+
+        <ul class="menu-links" id="menuLinks">
+            <li><a href="index.html">Inicio</a></li>
+
+            <li class="submenu">
+                <button class="submenu-btn" id="submenuBtn">Catálogo ▾</button>
+                <ul class="submenu-links" id="submenuLinks">
+                    <li><a href="perros.html">Perros</a></li>
+                    <li><a href="gatos.html">Gatos</a></li>
+                </ul>
+            </li>
+
+            <li><a href="galeria.html">Galería</a></li>
+            <li><a href="contactanos.html">Contáctanos</a></li>
+            <li><a href="refugio.html">Sobre el Refugio</a></li>
+
+            <li class="login" id="authLink"></li>
+        </ul>
+    </nav>
+</header>
+
+<h1>🐾 Refugio de Animales</h1>
+
+<!-- CAROUSEL -->
+<div class="carousel">
+    <img src="img/perro.png" class="slide active">
+    <img src="img/gato.png" class="slide">
+    <img src="img/perro2.png" class="slide">
+    <img src="img/gato2.png" class="slide">
+
+    <button id="prev">‹</button>
+    <button id="next">›</button>
+</div>
+
+<!-- RESULTADOS -->
+<section id="resultados" class="grid"></section>
+
+<!-- BOTÓN APP B -->
+<div style="margin:20px;">
+    <button onclick="irAppB()">🔐 Ir a App B</button>
+</div>
+
+<div class="container">
+
+  <!-- 🐶 PERROS -->
+  <div class="section">
+    <h2>🐶 Cómo cuidar a un perro</h2>
+
+    <div class="cards">
+      <div class="card">
+        <h3>🍖 Alimentación</h3>
+        <p>Dale comida balanceada y agua limpia todos los días.</p>
+      </div>
+
+      <div class="card">
+        <h3>🏃 Ejercicio</h3>
+        <p>Los perros necesitan salir a caminar y jugar diariamente.</p>
+      </div>
+
+      <div class="card">
+        <h3>🩺 Salud</h3>
+        <p>Llévalo al veterinario y mantén sus vacunas al día.</p>
+      </div>
+
+      <div class="card">
+        <h3>❤️ Cariño</h3>
+        <p>Dedícale tiempo, amor y atención para que sea feliz.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🐱 GATOS -->
+  <div class="section">
+    <h2>🐱 Cómo cuidar a un gato</h2>
+
+    <div class="cards">
+      <div class="card">
+        <h3>🥛 Alimentación</h3>
+        <p>Proporciónale alimento adecuado y agua fresca.</p>
+      </div>
+
+      <div class="card">
+        <h3>🧼 Higiene</h3>
+        <p>Mantén limpia su caja de arena y su espacio.</p>
+      </div>
+
+      <div class="card">
+        <h3>🧸 Juego</h3>
+        <p>Los gatos necesitan juguetes para mantenerse activos.</p>
+      </div>
+
+      <div class="card">
+        <h3>🏠 Espacio</h3>
+        <p>Bríndale un lugar seguro y cómodo para descansar.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>© 2026 Refugio Animal | Proyecto escolar 🐾</p>
+</footer>
+
+
+
+<!-- JS -->
+<script src="JS/api.js"></script>
+<script src="JS/auth.js"></script>
+<script src="JS/menu.js"></script>
+<script src="JS/catalogo.js"></script>
+<script src="JS/carousel.js"></script>
+<script src="JS/data.js"></script>
+<script src="JS/ui.js"></script>
+
+<script>
+    // Carrusel simple
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.carousel .slide');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    
+    function showSlide(index) {
+        slides.forEach((slide, i) => {
+            slide.classList.remove('active');
+            if (i === index) {
+                slide.classList.add('active');
+            }
+        });
+    }
+    
+    function nextSlide() {
+        currentSlide = (currentSlide + 1) % slides.length;
+        showSlide(currentSlide);
+    }
+    
+    function prevSlide() {
+        currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+        showSlide(currentSlide);
+    }
+    
+    if (prevBtn && nextBtn) {
+        prevBtn.addEventListener('click', prevSlide);
+        nextBtn.addEventListener('click', nextSlide);
+    }
+    
+    // Cambiar automático cada 5 segundos
+    setInterval(nextSlide, 5000);
+</script>
+
+<!-- 🔥 VALIDACIÓN SSO (AQUÍ ESTABA TU ERROR) -->
+<script>
+const token = localStorage.getItem("token");
+
+console.log("TOKEN INDEX:", token);
+
+if (token) {
+    fetch("http://localhost:3000/api/usuarios/token/validar", {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Token inválido");
+        return res.json();
+    })
+    .then(data => {
+
+        console.log("✅ Sesión válida:", data);
+
+        if (!data.usuario) return;
+
+        // 🔥 NORMALIZAR ROL
+        const rol = String(data.usuario.rol || "")
+            .toLowerCase()
+            .trim();
+
+        console.log("👑 ROL INDEX:", rol);
+
+        // 🔥 USAR USUARIO DEL TOKEN (CORRECTO)
+        const usuario = data.usuario;
+
+        const authLink = document.getElementById("authLink");
+
+        // 👤 MOSTRAR USUARIO
+        authLink.innerHTML = `
+            <span>👤 ${usuario.nombre} (${rol})</span>
+            <button onclick="logout()">Salir</button>
+        `;
+
+        // ⚙️ BOTÓN SOLO PARA ADMIN
+        if (rol === "admin") {
+            authLink.innerHTML += `
+                <a href="admin.html" style="margin-left:10px;">⚙️ Panel Admin</a>
+            `;
+        }
+
+    })
+    .catch(() => {
+        console.warn("❌ Token inválido, cerrando sesión");
+        localStorage.clear();
+    });
+}
+
+
+
+// 🔐 IR A APP B
+function irAppB() {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        alert("Debes iniciar sesión primero");
+        window.location.href = "login.html";
+        return;
+    }
+
+    window.location.href = "appB.html";
+}
+
+
+// 🔓 LOGOUT
+function logout() {
+    localStorage.clear();
+    window.location.reload();
+}
+</script>
+
+</body>
+</html>

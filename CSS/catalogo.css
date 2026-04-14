@@ -1,0 +1,249 @@
+/* CATÁLOGO DE ANIMALES */
+
+.catalogo-header {
+    text-align: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.catalogo-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+/* Filtros */
+.filtros-section {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.filtros-section h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.buscador {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.buscador input {
+    width: 100%;
+    padding: 15px 20px;
+    border: 2px solid #e0e0e0;
+    border-radius: 50px;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.buscador input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 10px rgba(102,126,234,0.2);
+}
+
+.filtros-group {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.filtros-group select {
+    padding: 12px 20px;
+    border: 2px solid #e0e0e0;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    background: white;
+    cursor: pointer;
+    flex: 1;
+    min-width: 150px;
+}
+
+.btn-filtrar {
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform 0.3s;
+}
+
+.btn-filtrar:hover {
+    transform: translateY(-2px);
+}
+
+/* Grid de animales */
+.animales-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.animal-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.animal-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.animal-img {
+    height: 220px;
+    overflow: hidden;
+}
+
+.animal-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s;
+}
+
+.animal-card:hover .animal-img img {
+    transform: scale(1.05);
+}
+
+.animal-info {
+    padding: 20px;
+}
+
+.animal-info h3 {
+    margin: 0 0 5px 0;
+    font-size: 1.3rem;
+    color: #333;
+}
+
+.animal-info .raza {
+    color: #667eea;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.animal-info .edad {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+.animal-info .descripcion {
+    color: #777;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    margin-bottom: 12px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin: 10px 0;
+}
+
+.badge.disponible {
+    background: #4CAF50;
+    color: white;
+}
+
+.badge.adoptado {
+    background: #FF9800;
+    color: white;
+}
+
+.btn-adoptar {
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: opacity 0.3s;
+}
+
+.btn-adoptar:hover {
+    opacity: 0.9;
+}
+
+/* Paginación */
+.paginacion-container {
+    display: flex;
+    justify-content: center;
+    padding: 30px 20px;
+}
+
+.pagination {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.pagination button {
+    padding: 8px 15px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.pagination button:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.pagination button.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+/* Loader */
+.loader {
+    text-align: center;
+    padding: 40px;
+    font-size: 1.2rem;
+    color: #667eea;
+}
+
+.loader.hidden {
+    display: none;
+}
+
+.no-resultados {
+    text-align: center;
+    padding: 60px;
+    background: #f9f9f9;
+    border-radius: 15px;
+    margin: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .animales-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filtros-group {
+        flex-direction: column;
+    }
+    
+    .btn-filtrar {
+        width: 100%;
+    }
+}

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitar Adopción - Refugio</title>
+    <link rel="stylesheet" href="CSS/styles.css">
+    <link rel="stylesheet" href="CSS/base.css">
+    <link rel="stylesheet" href="CSS/animations.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header>
+        <nav class="menu" aria-label="Menú principal">
+            <div class="logo">🐾 Refugio</div>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <ul class="menu-links" id="menuLinks">
+                <li><a href="index.html">Inicio</a></li>
+                <li class="submenu">
+                    <button class="submenu-btn">Catálogo ▾</button>
+                    <ul class="submenu-links">
+                        <li><a href="perros.html">Perros</a></li>
+                        <li><a href="gatos.html">Gatos</a></li>
+                    </ul>
+                </li>
+                <li><a href="galeria.html">Galería</a></li>
+                <li><a href="contactanos.html">Contáctanos</a></li>
+                <li><a href="refugio.html">Sobre el Refugio</a></li>
+                <li class="login" id="authLink"></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="pagina-header">
+            <h1>🐾 Solicitar Adopción</h1>
+            <p>Completa el formulario para iniciar el proceso de adopción</p>
+        </section>
+
+        <div class="solicitud-container">
+            <div class="solicitud-info">
+                <h2>📋 Animal seleccionado</h2>
+                <div id="detalleAnimal">
+                    <p>Cargando información del animal...</p>
+                </div>
+            </div>
+
+            <div class="solicitud-form">
+                <h2>📝 Tus datos</h2>
+                <form id="formSolicitud">
+                    <input type="text" id="nombre" placeholder="Nombre completo" required>
+                    <input type="email" id="email" placeholder="Correo electrónico" required>
+                    <input type="tel" id="telefono" placeholder="Teléfono" required>
+                    <textarea id="mensaje" placeholder="¿Por qué quieres adoptar este animal?" rows="4" required></textarea>
+                    <button type="submit">🐾 Enviar solicitud</button>
+                </form>
+                <div id="respuesta" style="text-align:center; margin-top:20px;"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>🐾 Refugio de Animales</h3>
+                <p>Dándoles una segunda oportunidad</p>
+            </div>
+            <div class="footer-section">
+                <h3>Contacto</h3>
+                <p>📞 (449) 123-4567</p>
+                <p>✉️ refugio@animales.com</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Refugio de Animales</p>
+        </div>
+    </footer>
+
+    
+    <script src="JS/api.js"></script>
+    <script src="JS/auth.js"></script>
+    <script src="JS/menu.js"></script>
+    <script src="JS/solicitud.js"></script>
+</body>
+</html>
