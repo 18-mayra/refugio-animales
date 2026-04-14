@@ -1,4 +1,4 @@
-// login.js - MFA con Google Authenticator
+// login.js - MFA con código visible en pantalla
 
 console.log("login.js cargado");
 
@@ -39,7 +39,7 @@ function generarCaptcha() {
     if (captchaResultado) captchaResultado.value = resultado;
 }
 
-function mostrarModalMFA() {
+function mostrarModalConCodigo(codigo) {
     return new Promise((resolve) => {
         let modal = document.getElementById("mfaModal");
         if (!modal) {
@@ -57,16 +57,21 @@ function mostrarModalMFA() {
                 align-items: center;
                 z-index: 9999;
             `;
-            modal.innerHTML = `
-                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 350px; width: 90%;">
-                    <h3>🔐 Código de verificación</h3>
-                    <p>Ingresa el código de 6 dígitos de Google Authenticator</p>
-                    <input type="text" id="mfaCodeInput" placeholder="Código de 6 dígitos" maxlength="6" style="width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ccc; border-radius: 8px; text-align: center; font-size: 1.2rem;">
-                    <button id="mfaSubmitBtn" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%;">Verificar</button>
-                </div>
-            `;
             document.body.appendChild(modal);
         }
+        
+        modal.innerHTML = `
+            <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 350px; width: 90%;">
+                <h3>🔐 Verificación de dos pasos</h3>
+                <div style="background: #f0f0f0; padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <p style="margin: 0; font-size: 14px;">Tu código de verificación es:</p>
+                    <p style="font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 10px 0; color: #667eea;">${codigo}</p>
+                    <p style="margin: 0; font-size: 12px; color: #666;">Ingresa este código para continuar</p>
+                </div>
+                <input type="text" id="mfaCodeInput" placeholder="Código de 6 dígitos" maxlength="6" style="width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ccc; border-radius: 8px; text-align: center; font-size: 1.2rem;">
+                <button id="mfaSubmitBtn" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%;">Verificar</button>
+            </div>
+        `;
         
         modal.style.display = "flex";
         
@@ -152,36 +157,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const token = data.accessToken;
 
-            // Verificar si el usuario tiene MFA activado
-            const mfaStatusRes = await fetch(API_URL + "/api/mfa/status", {
-                method: "GET",
+            // Generar código MFA
+            console.log("📩 Generando código MFA...");
+            const mfaSendRes = await fetch(API_URL + "/api/mfa/send", {
+                method: "POST",
                 headers: { "Authorization": "Bearer " + token }
             });
 
-            const mfaStatus = await mfaStatusRes.json();
+            const mfaData = await mfaSendRes.json();
 
-            if (mfaStatus.activado) {
-                // MFA - PEDIR CÓDIGO
-                console.log("🔐 Solicitando código MFA...");
-                const codigoIngresado = await mostrarModalMFA();
-
-                const mfaVerifyRes = await fetch(API_URL + "/api/mfa/verificar", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer " + token
-                    },
-                    body: JSON.stringify({ token: codigoIngresado })
-                });
-
-                const verifyData = await mfaVerifyRes.json();
-
-                if (!mfaVerifyRes.ok) {
-                    throw new Error(verifyData.error || "Código incorrecto");
-                }
-
-                console.log("✅ MFA verificado");
+            if (!mfaSendRes.ok) {
+                throw new Error(mfaData.error || "Error al generar código MFA");
             }
+
+            const codigoGenerado = mfaData.debug;
+            console.log("📱 Código generado:", codigoGenerado);
+
+            // Mostrar modal con el código
+            const codigoIngresado = await mostrarModalConCodigo(codigoGenerado);
+
+            // Verificar código
+            const mfaVerifyRes = await fetch(API_URL + "/api/mfa/verify", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({ code: codigoIngresado })
+            });
+
+            const verifyData = await mfaVerifyRes.json();
+
+            if (!mfaVerifyRes.ok) {
+                throw new Error(verifyData.error || "Código incorrecto");
+            }
+
+            console.log("✅ MFA verificado");
 
             localStorage.setItem("token", token);
             localStorage.setItem("refreshToken", data.refreshToken);
