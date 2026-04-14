@@ -1,4 +1,4 @@
-// login.js - Inicio de sesión con MFA (correo real)
+// login.js - MFA con Ethereal (código visible en logs)
 
 console.log("login.js cargado");
 
@@ -60,8 +60,8 @@ function mostrarModalMFA() {
             modal.innerHTML = `
                 <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 350px; width: 90%;">
                     <h3>🔐 Código de verificación</h3>
-                    <p>Se ha enviado un código de 6 dígitos a tu correo.</p>
-                    <p style="color: #666; font-size: 12px;">Revisa también la carpeta de SPAM</p>
+                    <p>El código se ha generado. Revisa los LOGS de Render.</p>
+                    <p style="color: #666; font-size: 12px;">(Busca la URL de Ethereal)</p>
                     <input type="text" id="mfaCodeInput" placeholder="Código de 6 dígitos" maxlength="6" style="width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ccc; border-radius: 8px; text-align: center; font-size: 1.2rem;">
                     <button id="mfaSubmitBtn" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%;">Verificar</button>
                 </div>
@@ -118,7 +118,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        console.log("📝 Formulario enviado");
 
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value.trim();
@@ -154,8 +153,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const token = data.accessToken;
 
-            // MFA - ENVIAR CÓDIGO POR CORREO
-            console.log("📩 Solicitando código MFA...");
+            // MFA - ENVIAR CÓDIGO
+            console.log("📩 Enviando código MFA...");
             const mfaSendRes = await fetch(API_URL + "/api/mfa/send", {
                 method: "POST",
                 headers: { "Authorization": "Bearer " + token }
@@ -167,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(mfaData.error || "Error al enviar código MFA");
             }
 
-            console.log("📧 Código enviado a tu correo. Revisa también SPAM.");
+            console.log("📧 Código MFA generado. Revisa los logs de Render para ver la URL.");
 
             // Mostrar modal para ingresar el código
             const codigoIngresado = await mostrarModalMFA();
