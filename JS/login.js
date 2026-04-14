@@ -178,12 +178,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 headers: { "Authorization": "Bearer " + token }
             });
 
-            console.log("📡 Respuesta MFA send:", mfaSendRes.status);
+            const mfaData = await mfaSendRes.json();
+            console.log("📡 Respuesta MFA:", mfaData);
 
             if (!mfaSendRes.ok) {
-                const errorText = await mfaSendRes.text();
-                console.error("Error MFA send:", errorText);
-                throw new Error("Error al enviar código MFA");
+                throw new Error(mfaData.error || "Error al enviar código MFA");
+            }
+
+            // Mostrar el código en una alerta (para depuración)
+            if (mfaData.debug) {
+                alert(`🔐 Tu código MFA es: ${mfaData.debug}\n\n(Revisa también tu correo)`);
             }
 
             // 3. MFA - MOSTRAR MODAL PARA INGRESAR CÓDIGO

@@ -29,6 +29,7 @@ router.post("/send", auth, async (req, res) => {
                         return res.status(500).json({ error: "Error guardando código" });
                     }
 
+                    // Intentar enviar correo (pero no es obligatorio)
                     try {
                         await enviarCorreo(
                             usuarioEmail,
@@ -37,10 +38,14 @@ router.post("/send", auth, async (req, res) => {
                         );
                         console.log("✅ Correo enviado a:", usuarioEmail);
                     } catch (emailError) {
-                        console.error("Error enviando correo:", emailError);
+                        console.error("❌ Error enviando correo:", emailError.message);
                     }
 
-                    res.json({ message: "Código enviado al correo", debug: code });
+                    // Devolver el código en la respuesta para depuración
+                    res.json({ 
+                        message: "Código enviado al correo",
+                        debug: code  // 👈 EL CÓDIGO APARECE AQUÍ
+                    });
                 }
             );
         }
