@@ -36,7 +36,7 @@ app.use(cookieParser());
 app.use(express.json());
 
 // =============================
-// 📄 SERVIR ARCHIVOS ESTÁTICOS
+// 📄 SERVIR ARCHIVOS ESTÁTICOS (HTML, CSS, JS)
 // =============================
 app.use(express.static(__dirname));
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
@@ -53,7 +53,7 @@ app.get("/", (req, res) => {
 
 app.get("/index.html", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
-});;
+});
 
 app.get("/login.html", (req, res) => {
     res.sendFile(path.join(__dirname, "login.html"));
@@ -101,6 +101,14 @@ app.get("/recuperar.html", (req, res) => {
 
 app.get("/editar.html", (req, res) => {
     res.sendFile(path.join(__dirname, "editar.html"));
+});
+
+app.get("/AppB.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "AppB.html"));
+});
+
+app.get("/catalogo.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "catalogo.html"));
 });
 
 // =============================
