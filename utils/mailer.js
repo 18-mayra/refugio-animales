@@ -1,12 +1,11 @@
-// utils/mailer.js - Envío de correos con Gmail
+// utils/mailer.js - Gmail con App Password
 require("dotenv").config();
 const nodemailer = require("nodemailer");
 
 console.log("📧 Configuración de correo:");
 console.log("   EMAIL_USER:", process.env.EMAIL_USER);
-console.log("   EMAIL_PASS:", process.env.EMAIL_PASS ? "✅ Configurada (longitud: " + process.env.EMAIL_PASS.length + ")" : "❌ No configurada");
+console.log("   EMAIL_PASS:", process.env.EMAIL_PASS ? "✅ Configurada" : "❌ No configurada");
 
-// Configuración para Gmail
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -26,10 +25,7 @@ transporter.verify((error, success) => {
     }
 });
 
-// Función para enviar correo
-async function enviarCorreo(para, asunto, texto) {
-    console.log(`📧 Intentando enviar correo a: ${para}`);
-    
+const enviarCorreo = async (para, asunto, texto) => {
     try {
         const info = await transporter.sendMail({
             from: `"Refugio de Animales 🐾" <${process.env.EMAIL_USER}>`,
@@ -37,18 +33,13 @@ async function enviarCorreo(para, asunto, texto) {
             subject: asunto,
             text: texto
         });
-        
-        console.log("✅ Correo enviado exitosamente!");
+        console.log("✅ Correo enviado a:", para);
         console.log("   Message ID:", info.messageId);
         return true;
-        
     } catch (error) {
-        console.error("❌ Error al enviar correo:");
-        console.error("   Código:", error.code);
-        console.error("   Mensaje:", error.message);
+        console.error("❌ Error al enviar correo:", error.message);
         return false;
     }
-}
+};
 
-// Exportar la función correctamente
-module.exports = enviarCorreo;  
+module.exports = enviarCorreo;
