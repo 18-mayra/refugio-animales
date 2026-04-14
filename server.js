@@ -36,15 +36,72 @@ app.use(cookieParser());
 app.use(express.json());
 
 // =============================
-// 📄 SERVIR ARCHIVOS ESTÁTICOS (HTML, CSS, JS)
+// 📄 SERVIR ARCHIVOS ESTÁTICOS
 // =============================
 app.use(express.static(__dirname));
-
-// Servir imágenes
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 app.use("/img", express.static(path.join(__dirname, "img")));
 app.use("/CSS", express.static(path.join(__dirname, "CSS")));
 app.use("/JS", express.static(path.join(__dirname, "JS")));
+
+// =============================
+// 🏠 RUTA PRINCIPAL
+// =============================
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+
+app.get("/index.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+
+app.get("/login.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "login.html"));
+});
+
+app.get("/registro.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "registro.html"));
+});
+
+app.get("/admin.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+app.get("/perros.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "perros.html"));
+});
+
+app.get("/gatos.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "gatos.html"));
+});
+
+app.get("/galeria.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "galeria.html"));
+});
+
+app.get("/contactanos.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "contactanos.html"));
+});
+
+app.get("/refugio.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "refugio.html"));
+});
+
+app.get("/detalle.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "detalle.html"));
+});
+
+app.get("/solicitud.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "solicitud.html"));
+});
+
+app.get("/recuperar.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "recuperar.html"));
+});
+
+app.get("/editar.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "editar.html"));
+});
 
 // =============================
 // 🌐 CORS
