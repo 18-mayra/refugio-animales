@@ -1,8 +1,9 @@
-// login.js - Inicio de sesión con renovación automática
+// login.js - Inicio de sesión con MFA y renovación de token
 
 console.log("login.js cargado");
 
 let intervaloRenovacion = null;
+const API_URL = "https://refugio-animales.onrender.com";
 
 function iniciarRenovacionToken() {
     if (intervaloRenovacion) clearInterval(intervaloRenovacion);
@@ -12,7 +13,7 @@ function iniciarRenovacionToken() {
         if (!refreshToken) return;
         
         try {
-            const res = await fetch("https://refugio-animales.onrender.com/api/usuarios/refresh", {
+            const res = await fetch(API_URL + "/api/usuarios/refresh", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ refreshToken })
@@ -26,7 +27,7 @@ function iniciarRenovacionToken() {
         } catch (error) {
             console.error("Error renovando token:", error);
         }
-    }, 20 * 60 * 1000); // Cada 20 minutos
+    }, 20 * 60 * 1000);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -65,21 +66,61 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
+            // 1. LOGIN
             const data = await window.API.login(email, password);
 
             if (!data.accessToken || !data.usuario) {
                 throw new Error("Respuesta inválida del servidor");
             }
 
-            localStorage.setItem("token", data.accessToken);
+            const token = data.accessToken;
+
+            // 2. MFA - ENVIAR CÓDIGO
+            console.log("📩 Enviando código MFA...");
+            const mfaSendRes = await fetch(API_URL + "/api/mfa/send", {
+                method: "POST",
+                headers: { "Authorization": "Bearer " + token }
+            });
+
+            if (!mfaSendRes.ok) {
+                throw new Error("Error al enviar código MFA");
+            }
+
+            // 3. MFA - PEDIR CÓDIGO AL USUARIO
+            const codigo = prompt("🔐 Se ha enviado un código de 6 dígitos a tu correo.\n\nIngresa el código:");
+
+            if (!codigo || codigo.length < 6) {
+                throw new Error("Código MFA inválido");
+            }
+
+            // 4. MFA - VERIFICAR CÓDIGO
+            const mfaVerifyRes = await fetch(API_URL + "/api/mfa/verify", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({ code: codigo })
+            });
+
+            const verifyData = await mfaVerifyRes.json();
+
+            if (!mfaVerifyRes.ok) {
+                throw new Error(verifyData.error || "Código incorrecto");
+            }
+
+            console.log("✅ MFA verificado correctamente");
+
+            // 5. GUARDAR DATOS
+            localStorage.setItem("token", token);
             localStorage.setItem("refreshToken", data.refreshToken);
             localStorage.setItem("usuario", JSON.stringify(data.usuario));
 
-            // Iniciar renovación automática
+            // 6. RENOVACIÓN AUTOMÁTICA
             iniciarRenovacionToken();
 
+            // 7. REDIRECCIÓN
             const rol = String(data.usuario.rol || "").toLowerCase().trim();
-
             if (rol === "admin" || rol === "superadmin") {
                 window.location.href = "admin.html";
             } else {
