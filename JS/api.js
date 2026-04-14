@@ -2,7 +2,7 @@
 
 if (!window.API) {
 
-    const BASE_URL = "http://localhost:3000";
+    const BASE_URL = "https://refugio-animales.onrender.com";
     let csrfToken = null;
 
     const API = {
@@ -82,52 +82,97 @@ if (!window.API) {
         },
 
         // ANIMALES
-        obtenerAnimales() {
+        async obtenerAnimales() {
             return this.request("/animales");
         },
 
-        crearAnimal(animal) {
+        async obtenerAnimal(id) {
+            return this.request(`/animales/${id}`);
+        },
+
+        async crearAnimal(animal) {
             return this.request("/admin/animales", {
                 method: "POST",
                 body: animal
             });
         },
 
-        actualizarAnimal(id, animal) {
+        async actualizarAnimal(id, animal) {
             return this.request(`/admin/animales/${id}`, {
                 method: "PUT",
                 body: animal
             });
         },
 
-        eliminarAnimal(id) {
+        async eliminarAnimal(id) {
             return this.request(`/admin/animales/${id}`, { method: "DELETE" });
         },
 
         // ADOPCIONES
-        aprobarAdopcion(id) {
-            return this.request(`/api/adopciones/aprobar/${id}`, { method: "PUT" });
+        async crearSolicitud(datos) {
+            return this.request("/api/adopciones", {
+                method: "POST",
+                body: datos
+            });
         },
 
-        rechazarAdopcion(id) {
-            return this.request(`/api/adopciones/rechazar/${id}`, { method: "PUT" });
+        async obtenerMisSolicitudes() {
+            return this.request("/api/adopciones/mis-solicitudes");
         },
 
-        obtenerTodasAdopciones() {
+        async obtenerTodasSolicitudes() {
             return this.request("/api/adopciones");
         },
 
+        async aprobarAdopcion(id) {
+            return this.request(`/api/adopciones/aprobar/${id}`, { method: "PUT" });
+        },
+
+        async rechazarAdopcion(id) {
+            return this.request(`/api/adopciones/rechazar/${id}`, { method: "PUT" });
+        },
+
         // USUARIOS
-        obtenerUsuarios() {
+        async login(email, password) {
+            const res = await fetch(BASE_URL + "/api/usuarios/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.mensaje || data.error || "Error en login");
+            return data;
+        },
+
+        async registro(nombre, email, password) {
+            return this.request("/api/usuarios/registro", {
+                method: "POST",
+                body: { nombre, email, password }
+            });
+        },
+
+        async validarToken() {
+            return this.request("/api/usuarios/token/validar");
+        },
+
+        async obtenerUsuarios() {
             return this.request("/api/usuarios/todos");
         },
 
-        obtenerSesiones() {
+        async bloquearUsuario(id) {
+            return this.request(`/api/usuarios/bloquear/${id}`, { method: "PUT" });
+        },
+
+        async obtenerSesiones() {
             return this.request("/api/usuarios/sessions");
         },
 
-        bloquearUsuario(id) {
-            return this.request(`/api/usuarios/bloquear/${id}`, { method: "PUT" });
+        // CONTACTO
+        async enviarContacto(datos) {
+            return this.request("/api/contacto", {
+                method: "POST",
+                body: datos
+            });
         }
     };
 

@@ -1,5 +1,7 @@
 // contactanos.js - Formulario de contacto
 
+const API_URL = "https://refugio-animales.onrender.com";
+
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("formContacto");
     const respuesta = document.getElementById("respuesta");
@@ -25,29 +27,23 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.disabled = true;
         
         try {
-            const res = await fetch("http://localhost:3000/api/contacto", {
+            const res = await fetch(API_URL + "/api/contacto", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ nombre, email, telefono, mensaje })
             });
             
             const data = await res.json();
             
-            if (!res.ok) {
-                throw new Error(data.error || "Error al enviar mensaje");
-            }
+            if (!res.ok) throw new Error(data.error);
             
             alert("✅ ¡Mensaje enviado! Te llegará una confirmación a tu correo.");
             form.reset();
             if (respuesta) {
-                respuesta.innerHTML = '<span style="color:green;">✅ Mensaje enviado correctamente. Revisa tu correo.</span>';
+                respuesta.innerHTML = '<span style="color:green;">✅ Mensaje enviado correctamente</span>';
                 setTimeout(() => { respuesta.innerHTML = ""; }, 5000);
             }
-            
         } catch (error) {
-            console.error("Error:", error);
             alert("❌ Error al enviar: " + error.message);
         } finally {
             btn.textContent = originalText;

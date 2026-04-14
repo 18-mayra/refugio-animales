@@ -1,4 +1,4 @@
-// registro.js - Registro de usuario con CAPTCHA
+// registro.js - Registro de usuario
 
 console.log("registro.js cargado");
 
@@ -6,17 +6,14 @@ document.addEventListener("DOMContentLoaded", () => {
     generarCaptcha();
 
     const form = document.getElementById("registroForm");
-    if (!form) {
-        console.error("❌ No se encontró registroForm");
-        return;
-    }
+    if (!form) return;
 
-    form.addEventListener("submit", async e => {
+    form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const nombre = document.getElementById("nombre")?.value.trim();
-        const email = document.getElementById("email")?.value.trim();
-        const password = document.getElementById("password")?.value.trim();
+        const nombre = document.getElementById("nombre").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
         const confirmPassword = document.getElementById("confirmPassword")?.value.trim();
 
         // Validar CAPTCHA
@@ -53,23 +50,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const res = await fetch("http://localhost:3000/api/usuarios/registro", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ nombre, email, password })
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.mensaje || data.error || "Error en registro");
-            }
-
+            await window.API.registro(nombre, email, password);
             alert("✅ Registro exitoso. Ahora puedes iniciar sesión.");
             window.location.href = "login.html";
-
         } catch (error) {
-            console.error("❌ ERROR REGISTRO:", error);
+            console.error("❌ ERROR:", error);
             alert(error.message);
             if (submitBtn) {
                 submitBtn.textContent = originalText;
@@ -79,7 +64,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// Generar CAPTCHA aleatorio
 function generarCaptcha() {
     const num1 = Math.floor(Math.random() * 10) + 1;
     const num2 = Math.floor(Math.random() * 10) + 1;

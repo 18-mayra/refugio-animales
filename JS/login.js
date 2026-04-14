@@ -1,4 +1,4 @@
-// login.js - Inicio de sesión con CAPTCHA y MFA
+// login.js - Inicio de sesión
 
 console.log("login.js cargado");
 
@@ -38,104 +38,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            // =========================
-            // 1. LOGIN
-            // =========================
-            const res = await fetch("http://localhost:3000/api/usuarios/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password })
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.mensaje || data.error || "Error en login");
-            }
+            const data = await window.API.login(email, password);
 
             if (!data.accessToken || !data.usuario) {
                 throw new Error("Respuesta inválida del servidor");
             }
 
-            const token = data.accessToken;
-            console.log("✅ Login exitoso");
-
-            // =========================
-            // 2. MFA - Enviar código
-            // =========================
-            console.log("📩 Enviando código MFA...");
-
-            const mfaSendRes = await fetch("http://localhost:3000/api/mfa/send", {
-                method: "POST",
-                headers: {
-                    "Authorization": "Bearer " + token
-                }
-            });
-
-            let mfaData;
-            try {
-                mfaData = await mfaSendRes.json();
-            } catch (e) {
-                throw new Error("Error al enviar código MFA");
-            }
-
-            if (!mfaSendRes.ok) {
-                throw new Error(mfaData.error || "Error al enviar código MFA");
-            }
-
-            console.log("📧 Código MFA enviado");
-            if (mfaData.debug) {
-                console.log("🔐 CÓDIGO:", mfaData.debug);
-            }
-
-            // =========================
-            // 3. MFA - Pedir código al usuario
-            // =========================
-            const codigo = prompt("🔐 Se ha enviado un código de verificación a tu correo.\n\nIngresa el código de 6 dígitos:");
-
-            if (!codigo || codigo.length < 6) {
-                throw new Error("Código MFA inválido");
-            }
-
-            // =========================
-            // 4. MFA - Verificar código
-            // =========================
-            const mfaVerifyRes = await fetch("http://localhost:3000/api/mfa/verify", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify({ code: codigo })
-            });
-
-            let verifyData;
-            try {
-                verifyData = await mfaVerifyRes.json();
-            } catch (e) {
-                throw new Error("Error al verificar código");
-            }
-
-            if (!mfaVerifyRes.ok) {
-                throw new Error(verifyData.error || "Código incorrecto");
-            }
-
-            console.log("✅ MFA verificado");
-
-            // =========================
-            // 5. GUARDAR DATOS
-            // =========================
-            localStorage.setItem("token", token);
-            if (data.refreshToken) {
-                localStorage.setItem("refreshToken", data.refreshToken);
-            }
+            localStorage.setItem("token", data.accessToken);
+            localStorage.setItem("refreshToken", data.refreshToken);
             localStorage.setItem("usuario", JSON.stringify(data.usuario));
 
-            // =========================
-            // 6. REDIRECCIÓN
-            // =========================
             const rol = String(data.usuario.rol || "").toLowerCase().trim();
-            console.log("👑 Rol:", rol);
 
             if (rol === "admin" || rol === "superadmin") {
                 window.location.href = "admin.html";
@@ -155,7 +68,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// Generar CAPTCHA aleatorio
 function generarCaptcha() {
     const num1 = Math.floor(Math.random() * 10) + 1;
     const num2 = Math.floor(Math.random() * 10) + 1;

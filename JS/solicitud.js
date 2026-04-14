@@ -1,12 +1,12 @@
 // solicitud.js - Formulario de solicitud de adopción
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://refugio-animales.onrender.com";
 
 // Obtener datos del animal desde localStorage
 const animalId = localStorage.getItem("adopcion_animal_id");
 const animalNombre = localStorage.getItem("adopcion_animal_nombre");
 
-// Mostrar información del animal seleccionado
+// Mostrar información del animal
 async function cargarInfoAnimal() {
     const detalleDiv = document.getElementById("detalleAnimal");
     
@@ -29,28 +29,13 @@ async function cargarInfoAnimal() {
         
         const animal = await res.json();
         
-        // Obtener URL de la imagen
-        let imgUrl = "https://via.placeholder.com/150x150?text=Sin+Imagen";
-        if (animal.imagen_url) {
-            if (animal.imagen_url.startsWith('http')) {
-                imgUrl = animal.imagen_url;
-            } else if (animal.imagen_url.startsWith('/uploads/')) {
-                imgUrl = `http://localhost:3000${animal.imagen_url}`;
-            } else if (animal.imagen_url.startsWith('img/')) {
-                imgUrl = `http://localhost:5500/${animal.imagen_url}`;
-            }
-        }
-        
         detalleDiv.innerHTML = `
             <div class="animal-solicitud">
-                <img src="${imgUrl}" alt="${animal.nombre}" onerror="this.src='https://via.placeholder.com/150x150?text=Sin+Imagen'">
-                <div class="animal-solicitud-info">
-                    <h3>${animal.nombre}</h3>
-                    <p><strong>Tipo:</strong> ${animal.tipo}</p>
-                    <p><strong>Raza:</strong> ${animal.raza || 'No especificada'}</p>
-                    <p><strong>Edad:</strong> ${animal.edad || '?'} años</p>
-                    <p><strong>Estado:</strong> ${animal.estado || 'Disponible'}</p>
-                </div>
+                <h3>${animal.nombre}</h3>
+                <p><strong>Tipo:</strong> ${animal.tipo}</p>
+                <p><strong>Raza:</strong> ${animal.raza || 'No especificada'}</p>
+                <p><strong>Edad:</strong> ${animal.edad || '?'} años</p>
+                <p><strong>Estado:</strong> ${animal.estado || 'Disponible'}</p>
             </div>
         `;
     } catch (error) {
