@@ -35,16 +35,20 @@ app.set("trust proxy", 1);
 app.use(cookieParser());
 app.use(express.json());
 
-// Servir archivos estáticos
+// Servir archivos estáticos (imágenes)
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 app.use("/img", express.static(path.join(__dirname, "img")));
+
+// Servir archivos HTML estáticos
+app.use(express.static(path.join(__dirname)));
 
 // =============================
 // 🌐 CORS
 // =============================
 const allowedOrigins = [
     "http://localhost:5500",
-    "http://127.0.0.1:5500"
+    "http://127.0.0.1:5500",
+    "https://refugio-animales.onrender.com"
 ];
 
 app.use(cors({
@@ -103,7 +107,7 @@ app.use((req, res, next) => {
 });
 
 // =============================
-// 📦 RUTAS
+// 📦 RUTAS API
 // =============================
 app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/adopciones", adopcionesRoutes);
@@ -116,6 +120,69 @@ app.use("/api/settings", userSettingsRoutes);
 app.use("/api/contacto", contactoRoutes);
 app.use("/animales", animalesRoutes);
 app.use("/admin/animales", auth, auditoria, animalesRoutes);
+
+// =============================
+// 📄 RUTAS PARA PÁGINAS HTML (Render)
+// =============================
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+
+app.get("/index.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+
+app.get("/login.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "login.html"));
+});
+
+app.get("/registro.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "registro.html"));
+});
+
+app.get("/admin.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+app.get("/perros.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "perros.html"));
+});
+
+app.get("/gatos.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "gatos.html"));
+});
+
+app.get("/galeria.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "galeria.html"));
+});
+
+app.get("/contactanos.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "contactanos.html"));
+});
+
+app.get("/refugio.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "refugio.html"));
+});
+
+app.get("/AppB.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "AppB.html"));
+});
+
+app.get("/detalle.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "detalle.html"));
+});
+
+app.get("/solicitud.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "solicitud.html"));
+});
+
+app.get("/recuperar.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "recuperar.html"));
+});
+
+app.get("/editar.html", (req, res) => {
+    res.sendFile(path.join(__dirname, "editar.html"));
+});
 
 // =============================
 // 🔎 BÚSQUEDA
