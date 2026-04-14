@@ -1,10 +1,11 @@
 // login.js - Inicio de sesión con MFA y renovación de token
 
-console.log("login.js cargado");
+console.log("login.js cargado - VERSIÓN CON MFA");
 
 let intervaloRenovacion = null;
 const API_URL = "https://refugio-animales.onrender.com";
 
+// Renovación automática del token
 function iniciarRenovacionToken() {
     if (intervaloRenovacion) clearInterval(intervaloRenovacion);
     
@@ -30,14 +31,34 @@ function iniciarRenovacionToken() {
     }, 20 * 60 * 1000);
 }
 
+// Generar CAPTCHA aleatorio
+function generarCaptcha() {
+    const num1 = Math.floor(Math.random() * 10) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    const resultado = num1 + num2;
+    
+    const captchaNum1 = document.getElementById("captchaNum1");
+    const captchaNum2 = document.getElementById("captchaNum2");
+    const captchaResultado = document.getElementById("captchaResultado");
+    
+    if (captchaNum1) captchaNum1.textContent = num1;
+    if (captchaNum2) captchaNum2.textContent = num2;
+    if (captchaResultado) captchaResultado.value = resultado;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("🔐 DOM cargado - Inicializando login con MFA");
     generarCaptcha();
 
     const form = document.getElementById("loginForm");
-    if (!form) return;
+    if (!form) {
+        console.error("❌ Formulario de login no encontrado");
+        return;
+    }
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
+        console.log("📝 Formulario enviado");
 
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value.trim();
@@ -67,6 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             // 1. LOGIN
+            console.log("📡 Enviando login...");
             const data = await window.API.login(email, password);
 
             if (!data.accessToken || !data.usuario) {
@@ -74,6 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const token = data.accessToken;
+            console.log("✅ Login exitoso");
 
             // 2. MFA - ENVIAR CÓDIGO
             console.log("📩 Enviando código MFA...");
@@ -82,7 +105,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 headers: { "Authorization": "Bearer " + token }
             });
 
+            console.log("📡 Respuesta MFA send:", mfaSendRes.status);
+
             if (!mfaSendRes.ok) {
+                const errorText = await mfaSendRes.text();
+                console.error("Error MFA send:", errorText);
                 throw new Error("Error al enviar código MFA");
             }
 
@@ -94,6 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // 4. MFA - VERIFICAR CÓDIGO
+            console.log("🔍 Verificando código MFA...");
             const mfaVerifyRes = await fetch(API_URL + "/api/mfa/verify", {
                 method: "POST",
                 headers: {
@@ -121,6 +149,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // 7. REDIRECCIÓN
             const rol = String(data.usuario.rol || "").toLowerCase().trim();
+            console.log("👑 Rol:", rol);
+
             if (rol === "admin" || rol === "superadmin") {
                 window.location.href = "admin.html";
             } else {
@@ -138,17 +168,3 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
-
-function generarCaptcha() {
-    const num1 = Math.floor(Math.random() * 10) + 1;
-    const num2 = Math.floor(Math.random() * 10) + 1;
-    const resultado = num1 + num2;
-    
-    const captchaNum1 = document.getElementById("captchaNum1");
-    const captchaNum2 = document.getElementById("captchaNum2");
-    const captchaResultado = document.getElementById("captchaResultado");
-    
-    if (captchaNum1) captchaNum1.textContent = num1;
-    if (captchaNum2) captchaNum2.textContent = num2;
-    if (captchaResultado) captchaResultado.value = resultado;
-}
