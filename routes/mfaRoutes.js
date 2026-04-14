@@ -1,89 +1,142 @@
 const router = require("express").Router();
 const auth = require("../middlewares/authMiddleware");
 const db = require("../db");
-const enviarCorreo = require("../utils/mailer");
+const speakeasy = require("speakeasy");
+const QRCode = require("qrcode");
 
-router.post("/send", auth, async (req, res) => {
-    const code = Math.floor(100000 + Math.random() * 900000);
-    const expires = new Date(Date.now() + 5 * 60000);
+// ===============================
+// ACTIVAR MFA (generar QR)
+// ===============================
+router.post("/activar", auth, async (req, res) => {
+    try {
+        // Generar secreto
+        const secret = speakeasy.generateSecret({
+            name: `Refugio Animales (${req.usuario.email})`
+        });
 
-    console.log("🔥 CÓDIGO MFA GENERADO:", code);
-
-    db.query(
-        "SELECT email FROM usuarios WHERE id = ?",
-        [req.usuario.id],
-        async (err, result) => {
-            if (err || result.length === 0) {
-                console.error("❌ Usuario no encontrado");
-                return res.status(500).json({ error: "Usuario no encontrado" });
-            }
-
-            const usuarioEmail = result[0].email;
-            console.log("📧 Enviando código a:", usuarioEmail);
-
-            db.query(
-                "INSERT INTO mfa_codes (user_id, code, expires_at) VALUES (?, ?, ?)",
-                [req.usuario.id, code, expires],
-                async (err2) => {
-                    if (err2) {
-                        console.error("❌ Error guardando código:", err2);
-                        return res.status(500).json({ error: "Error guardando código" });
-                    }
-
-                    console.log("📧 Intentando enviar correo...");
-                    const enviado = await enviarCorreo(
-                        usuarioEmail,
-                        "🔐 Código de verificación - Refugio",
-                        `Tu código MFA es: ${code}\n\nExpira en 5 minutos.\n\nSi no solicitaste esto, ignora el mensaje.\n\nRefugio de Animales 🐾`
-                    );
-
-                    if (enviado) {
-                        console.log("✅ Correo enviado a:", usuarioEmail);
-                    } else {
-                        console.error("❌ Falló el envío a:", usuarioEmail);
-                    }
-
-                    res.json({ 
-                        message: "Código enviado al correo",
-                        debug: code 
-                    });
+        // Guardar secreto en la base de datos
+        db.query(
+            "UPDATE usuarios SET secret_mfa = ? WHERE id = ?",
+            [secret.base32, req.usuario.id],
+            async (err) => {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).json({ error: "Error al guardar secreto" });
                 }
-            );
-        }
-    );
+
+                // Generar código QR
+                const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
+                
+                res.json({
+                    mensaje: "Escanea el código QR con Google Authenticator",
+                    qrCode: qrCodeUrl,
+                    secret: secret.base32
+                });
+            }
+        );
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al activar MFA" });
+    }
 });
 
-router.post("/verify", auth, (req, res) => {
-    const { code } = req.body;
+// ===============================
+// VERIFICAR Y ACTIVAR MFA
+// ===============================
+router.post("/verificar-activar", auth, (req, res) => {
+    const { token } = req.body;
 
-    if (!code) {
+    if (!token) {
         return res.status(400).json({ error: "Código requerido" });
     }
 
     db.query(
-        "SELECT * FROM mfa_codes WHERE user_id = ? AND code = ? ORDER BY id DESC LIMIT 1",
-        [req.usuario.id, code],
+        "SELECT secret_mfa FROM usuarios WHERE id = ?",
+        [req.usuario.id],
         (err, result) => {
-            if (err) {
-                console.error("Error verificando MFA:", err);
-                return res.status(500).json({ error: "Error del servidor" });
+            if (err || result.length === 0) {
+                return res.status(500).json({ error: "Usuario no encontrado" });
             }
 
-            if (result.length === 0) {
-                return res.status(400).json({ error: "Código incorrecto" });
+            const secret = result[0].secret_mfa;
+
+            const verified = speakeasy.totp.verify({
+                secret: secret,
+                encoding: 'base32',
+                token: token,
+                window: 1
+            });
+
+            if (verified) {
+                db.query(
+                    "UPDATE usuarios SET mfa_activado = TRUE WHERE id = ?",
+                    [req.usuario.id],
+                    (err2) => {
+                        if (err2) {
+                            return res.status(500).json({ error: "Error al activar" });
+                        }
+                        res.json({ mensaje: "MFA activado correctamente" });
+                    }
+                );
+            } else {
+                res.status(400).json({ error: "Código incorrecto" });
             }
-
-            const registro = result[0];
-
-            if (new Date(registro.expires_at) < new Date()) {
-                return res.status(400).json({ error: "Código expirado" });
-            }
-
-            db.query("DELETE FROM mfa_codes WHERE id = ?", [registro.id]);
-
-            res.json({ message: "MFA correcto" });
         }
     );
+});
+
+// ===============================
+// VERIFICAR MFA EN LOGIN
+// ===============================
+router.post("/verificar", auth, (req, res) => {
+    const { token } = req.body;
+
+    if (!token) {
+        return res.status(400).json({ error: "Código requerido" });
+    }
+
+    db.query(
+        "SELECT secret_mfa, mfa_activado FROM usuarios WHERE id = ?",
+        [req.usuario.id],
+        (err, result) => {
+            if (err || result.length === 0) {
+                return res.status(500).json({ error: "Usuario no encontrado" });
+            }
+
+            const usuario = result[0];
+
+            if (!usuario.mfa_activado) {
+                return res.json({ message: "MFA no activado" });
+            }
+
+            const verified = speakeasy.totp.verify({
+                secret: usuario.secret_mfa,
+                encoding: 'base32',
+                token: token,
+                window: 1
+            });
+
+            if (verified) {
+                res.json({ message: "MFA correcto" });
+            } else {
+                res.status(400).json({ error: "Código incorrecto" });
+            }
+        }
+    );
+
+    // Verificar si el usuario tiene MFA activado
+router.get("/status", auth, (req, res) => {
+    db.query(
+        "SELECT mfa_activado FROM usuarios WHERE id = ?",
+        [req.usuario.id],
+        (err, result) => {
+            if (err || result.length === 0) {
+                return res.status(500).json({ error: "Error" });
+            }
+            res.json({ activado: result[0].mfa_activado === 1 });
+        }
+    );
+});
 });
 
 module.exports = router;

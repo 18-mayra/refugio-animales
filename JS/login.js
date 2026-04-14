@@ -1,4 +1,4 @@
-// login.js - MFA con Ethereal (código visible en logs)
+// login.js - MFA con Google Authenticator
 
 console.log("login.js cargado");
 
@@ -60,8 +60,7 @@ function mostrarModalMFA() {
             modal.innerHTML = `
                 <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 350px; width: 90%;">
                     <h3>🔐 Código de verificación</h3>
-                    <p>El código se ha generado. Revisa los LOGS de Render.</p>
-                    <p style="color: #666; font-size: 12px;">(Busca la URL de Ethereal)</p>
+                    <p>Ingresa el código de 6 dígitos de Google Authenticator</p>
                     <input type="text" id="mfaCodeInput" placeholder="Código de 6 dígitos" maxlength="6" style="width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ccc; border-radius: 8px; text-align: center; font-size: 1.2rem;">
                     <button id="mfaSubmitBtn" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%;">Verificar</button>
                 </div>
@@ -153,41 +152,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const token = data.accessToken;
 
-            // MFA - ENVIAR CÓDIGO
-            console.log("📩 Enviando código MFA...");
-            const mfaSendRes = await fetch(API_URL + "/api/mfa/send", {
-                method: "POST",
+            // Verificar si el usuario tiene MFA activado
+            const mfaStatusRes = await fetch(API_URL + "/api/mfa/status", {
+                method: "GET",
                 headers: { "Authorization": "Bearer " + token }
             });
 
-            const mfaData = await mfaSendRes.json();
+            const mfaStatus = await mfaStatusRes.json();
 
-            if (!mfaSendRes.ok) {
-                throw new Error(mfaData.error || "Error al enviar código MFA");
+            if (mfaStatus.activado) {
+                // MFA - PEDIR CÓDIGO
+                console.log("🔐 Solicitando código MFA...");
+                const codigoIngresado = await mostrarModalMFA();
+
+                const mfaVerifyRes = await fetch(API_URL + "/api/mfa/verificar", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify({ token: codigoIngresado })
+                });
+
+                const verifyData = await mfaVerifyRes.json();
+
+                if (!mfaVerifyRes.ok) {
+                    throw new Error(verifyData.error || "Código incorrecto");
+                }
+
+                console.log("✅ MFA verificado");
             }
-
-            console.log("📧 Código MFA generado. Revisa los logs de Render para ver la URL.");
-
-            // Mostrar modal para ingresar el código
-            const codigoIngresado = await mostrarModalMFA();
-
-            // Verificar código
-            const mfaVerifyRes = await fetch(API_URL + "/api/mfa/verify", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify({ code: codigoIngresado })
-            });
-
-            const verifyData = await mfaVerifyRes.json();
-
-            if (!mfaVerifyRes.ok) {
-                throw new Error(verifyData.error || "Código incorrecto");
-            }
-
-            console.log("✅ MFA verificado");
 
             localStorage.setItem("token", token);
             localStorage.setItem("refreshToken", data.refreshToken);
