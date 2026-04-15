@@ -8,29 +8,25 @@
   <link rel="stylesheet" href="CSS/animations.css">
 </head>
 <body class="admin-page">
-  
-  <script src="JS/authGuard.js"></script>
-  <script>soloAdmin();</script>
 
-  <!-- 🔥 AGREGAR HEADER CON MENÚ -->
-  <header>
-    <nav class="menu" aria-label="Menú principal">
-      <div class="logo">🐾 Refugio Admin</div>
-      <button class="menu-toggle" id="menuToggle">☰</button>
-      <ul class="menu-links" id="menuLinks">
-        <li><a href="index.html">Inicio</a></li>
-        <li><a href="admin.html" class="active">Panel Admin</a></li>
-        <li class="login" id="authLink"></li>  <!-- 👈 ESTO ES LO QUE FALTA -->
-      </ul>
-    </nav>
-  </header>
+<header>
+  <nav class="menu" aria-label="Menú principal">
+    <div class="logo">🐾 Refugio Admin</div>
+    <button class="menu-toggle" id="menuToggle">☰</button>
+    <ul class="menu-links" id="menuLinks">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="admin.html" class="active">Panel Admin</a></li>
+      <li class="login" id="authLink"></li>
+    </ul>
+  </nav>
+</header>
 
 <div class="admin-wrapper">
 <div class="admin-container">
 
 <h1>🐾 Panel de Administración</h1>
 
-<button id="btnCerrarSesion">🚪 Cerrar sesión</button>
+<button id="btnCerrarSesion">Cerrar sesión</button>
 <hr>
 
 <form id="formAnimal" enctype="multipart/form-data">
@@ -69,7 +65,6 @@
     <option value="Adoptado">Adoptado</option>
   </select><br><br>
 
-  <!-- 🔥 CAMPO DE IMAGEN DENTRO DEL FORMULARIO -->
   <div class="form-group">
     <label>📸 Imagen del animal:</label>
     <input type="file" id="imagen" accept="image/*">
@@ -100,13 +95,13 @@
 
 <hr>
 
-<h2>📋 Listado de Animales</h2>
+<h2>Listado de Animales</h2>
 <div id="listaAnimales"></div>
 
-<h2>👥 Gestión de Usuarios</h2>
+<h2>Gestión de Usuarios</h2>
 <div id="usuarios"></div>
 
-<h2>🖥️ Sesiones activas</h2>
+<h2>Sesiones activas</h2>
 <div id="sesiones"></div>
 
 <h2>🐾 Solicitudes de Adopción</h2>
@@ -119,5 +114,49 @@
 <script src="JS/auth.js"></script>
 <script src="JS/admin.js"></script>
 <script src="JS/menu.js"></script>
+
+<!-- 🔥 SCRIPTS DE SEGURIDAD AL FINAL DEL BODY -->
+<script>
+  // Verificar sesión de admin después de que todo esté cargado
+  (function() {
+    const token = localStorage.getItem("accessToken");
+    const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+    
+    console.log("🔍 Verificando admin en admin.html");
+    console.log("Token:", token ? "SÍ" : "NO");
+    console.log("Usuario:", usuario);
+    
+    if (!token) {
+      alert("Debes iniciar sesión");
+      window.location.href = "/login.html";
+      return;
+    }
+    
+    if (usuario.rol !== "admin" && usuario.rol !== "superadmin") {
+      alert("Acceso solo para administradores");
+      window.location.href = "/index.html";
+      return;
+    }
+    
+    // Mostrar nombre del admin en el navbar
+    const authLink = document.getElementById("authLink");
+    if (authLink && usuario.nombre) {
+      authLink.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span>🐾 Hola, ${usuario.nombre}</span>
+          <button onclick="cerrarSesion()" style="background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Salir</button>
+        </div>
+      `;
+    }
+  })();
+  
+  function cerrarSesion() {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("usuario");
+    window.location.href = "/login.html";
+  }
+</script>
+
 </body>
 </html>
