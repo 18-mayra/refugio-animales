@@ -1,6 +1,7 @@
 // admin.js - Panel de administración
 
 let animalesGlobal = [];
+let csrfToken = "";
 const API_BASE_URL = window.location.origin;
 
 function escaparHTML(texto) {
@@ -8,16 +9,25 @@ function escaparHTML(texto) {
     return texto.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-// ✅ Función para obtener headers con token
-function getAuthHeaders() {
-    const token = localStorage.getItem("accessToken");
-    return {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-    };
+// ===============================
+// 🔐 OBTENER CSRF TOKEN
+// ===============================
+async function obtenerCSRF() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/csrf-token`, {
+            credentials: "include"
+        });
+        const data = await res.json();
+        csrfToken = data.csrfToken;
+        console.log("✅ CSRF Token obtenido");
+    } catch (error) {
+        console.error("Error CSRF:", error);
+    }
 }
 
-// ✅ Verificar si el token es válido
+// ===============================
+// ✅ VERIFICAR TOKEN
+// ===============================
 async function verificarToken() {
     const token = localStorage.getItem("accessToken");
     if (!token) return false;
@@ -32,7 +42,9 @@ async function verificarToken() {
     }
 }
 
-// ✅ Cargar animales
+// ===============================
+// 📥 CARGAR ANIMALES
+// ===============================
 async function cargarAnimales() { 
     try { 
         const res = await fetch(`${API_BASE_URL}/animales`);
@@ -47,7 +59,9 @@ async function cargarAnimales() {
     } 
 }
 
-// ✅ Cargar sesiones (requiere token)
+// ===============================
+// 🖥️ CARGAR SESIONES
+// ===============================
 async function cargarSesiones() {
     const contenedor = document.getElementById("sesiones");
     if (!contenedor) return;
@@ -60,7 +74,12 @@ async function cargarSesiones() {
     
     try {
         const res = await fetch(`${API_BASE_URL}/api/usuarios/sessions`, {
-            headers: { "Authorization": `Bearer ${token}` }
+            method: "GET",
+            credentials: "include",
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "CSRF-Token": csrfToken
+            }
         });
         
         if (res.status === 401 || res.status === 403) {
@@ -88,7 +107,9 @@ async function cargarSesiones() {
     }
 }
 
-// ✅ Cargar usuarios (requiere token)
+// ===============================
+// 👥 CARGAR USUARIOS
+// ===============================
 async function cargarUsuarios() {
     const contenedor = document.getElementById("usuarios");
     if (!contenedor) return;
@@ -101,7 +122,12 @@ async function cargarUsuarios() {
     
     try {
         const res = await fetch(`${API_BASE_URL}/api/usuarios/todos`, {
-            headers: { "Authorization": `Bearer ${token}` }
+            method: "GET",
+            credentials: "include",
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "CSRF-Token": csrfToken
+            }
         });
         
         if (res.status === 401 || res.status === 403) {
@@ -129,7 +155,9 @@ async function cargarUsuarios() {
     }
 }
 
-// ✅ Cargar adopciones (requiere token)
+// ===============================
+// 🐾 CARGAR ADOPCIONES
+// ===============================
 async function cargarAdopciones() {
     const contenedor = document.getElementById("adopciones");
     if (!contenedor) return;
@@ -142,7 +170,12 @@ async function cargarAdopciones() {
     
     try {
         const res = await fetch(`${API_BASE_URL}/api/adopciones`, {
-            headers: { "Authorization": `Bearer ${token}` }
+            method: "GET",
+            credentials: "include",
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "CSRF-Token": csrfToken
+            }
         });
         
         if (res.status === 401 || res.status === 403) {
@@ -176,7 +209,9 @@ async function cargarAdopciones() {
     }
 }
 
-// ✅ Mostrar animales
+// ===============================
+// 🖼️ MOSTRAR ANIMALES
+// ===============================
 function mostrarAnimales(animales) {
     const lista = document.getElementById("listaAnimales");
     if (!lista) return;
@@ -186,7 +221,7 @@ function mostrarAnimales(animales) {
         return; 
     }
     animales.forEach(a => {
-        lista.innerHTML += `<div class="card-admin">
+        lista.innerHTML += `<div class="card-admin" data-id="${a.id}">
             <div class="card-img"><img src="${a.imagen_url || '/img/perro.png'}" onerror="this.src='${API_BASE_URL}/img/perro.png'"></div>
             <div class="card-info">
                 <h3>${escaparHTML(a.nombre)} <span class="tipo-badge">${escaparHTML(a.tipo)}</span></h3>
@@ -202,7 +237,9 @@ function mostrarAnimales(animales) {
     });
 }
 
-// ✅ Subir imagen
+// ===============================
+// 📸 SUBIR IMAGEN
+// ===============================
 async function subirImagen(file) {
     if (!file) return null;
     const formData = new FormData();
@@ -217,7 +254,11 @@ async function subirImagen(file) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/admin/upload`, {
             method: "POST",
-            headers: { "Authorization": `Bearer ${token}` },
+            credentials: "include",
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "CSRF-Token": csrfToken
+            },
             body: formData
         });
         
@@ -238,10 +279,13 @@ async function subirImagen(file) {
 }
 
 // ===============================
-// INICIALIZAR
+// 🚀 INICIALIZAR
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("🚀 Inicializando panel de admin...");
+    
+    // 🔥 OBTENER CSRF TOKEN PRIMERO
+    await obtenerCSRF();
     
     const token = localStorage.getItem("accessToken");
     const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
@@ -264,7 +308,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         authLink.innerHTML = `
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span>🐾 Hola, ${usuario.nombre}</span>
-                <button onclick="cerrarSesionAdmin()" class="btn-cerrar-sesion">Salir</button>
+                <button onclick="cerrarSesionAdmin()" class="btn-cerrar-sesion" style="background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Salir</button>
             </div>
         `;
     }
@@ -308,18 +352,22 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (id) {
                     res = await fetch(`${API_BASE_URL}/admin/animales/${id}`, {
                         method: "PUT",
+                        credentials: "include",
                         headers: { 
                             "Content-Type": "application/json",
-                            "Authorization": `Bearer ${token}`
+                            "Authorization": `Bearer ${token}`,
+                            "CSRF-Token": csrfToken
                         },
                         body: JSON.stringify(animal)
                     });
                 } else {
                     res = await fetch(`${API_BASE_URL}/admin/animales`, {
                         method: "POST",
+                        credentials: "include",
                         headers: { 
                             "Content-Type": "application/json",
-                            "Authorization": `Bearer ${token}`
+                            "Authorization": `Bearer ${token}`,
+                            "CSRF-Token": csrfToken
                         },
                         body: JSON.stringify(animal)
                     });
@@ -383,6 +431,9 @@ window.editarAnimal = function(id) {
     window.location.href = `editar.html?id=${id}`; 
 };
 
+// ===============================
+// 🗑️ ELIMINAR ANIMAL (CON CSRF)
+// ===============================
 window.eliminarAnimal = async function(id) { 
     if (!confirm("¿Eliminar este animal?")) return;
     const token = localStorage.getItem("accessToken");
@@ -391,9 +442,11 @@ window.eliminarAnimal = async function(id) {
     try {
         const res = await fetch(`${API_BASE_URL}/admin/animales/${id}`, { 
             method: "DELETE",
+            credentials: "include",
             headers: { 
                 "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "CSRF-Token": csrfToken
             }
         });
         
@@ -415,6 +468,9 @@ window.eliminarAnimal = async function(id) {
     } 
 };
 
+// ===============================
+// 🔒 BLOQUEAR USUARIO (CON CSRF)
+// ===============================
 window.bloquearUsuario = async function(id) { 
     if (!confirm("¿Bloquear este usuario?")) return;
     const token = localStorage.getItem("accessToken");
@@ -423,7 +479,12 @@ window.bloquearUsuario = async function(id) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/usuarios/bloquear/${id}`, { 
             method: "PUT",
-            headers: { "Authorization": `Bearer ${token}` }
+            credentials: "include",
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json",
+                "CSRF-Token": csrfToken
+            }
         });
         if (!res.ok) throw new Error("Error al bloquear");
         alert("✅ Usuario bloqueado");
@@ -433,6 +494,9 @@ window.bloquearUsuario = async function(id) {
     }
 };
 
+// ===============================
+// 🔒 CERRAR SESIÓN DE USUARIO (CON CSRF)
+// ===============================
 window.cerrarSesionUsuario = async function(id) { 
     if (!confirm("¿Cerrar esta sesión?")) return;
     const token = localStorage.getItem("accessToken");
@@ -441,7 +505,12 @@ window.cerrarSesionUsuario = async function(id) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/sessions/${id}`, { 
             method: "DELETE",
-            headers: { "Authorization": `Bearer ${token}` }
+            credentials: "include",
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json",
+                "CSRF-Token": csrfToken
+            }
         });
         if (!res.ok) throw new Error("Error al cerrar sesión");
         alert("✅ Sesión cerrada");
@@ -451,6 +520,9 @@ window.cerrarSesionUsuario = async function(id) {
     }
 };
 
+// ===============================
+// ✅ APROBAR ADOPCIÓN (CON CSRF)
+// ===============================
 window.aprobarAdopcion = async function(id) { 
     const token = localStorage.getItem("accessToken");
     if (!token) { cerrarSesionAdmin(); return; }
@@ -458,7 +530,12 @@ window.aprobarAdopcion = async function(id) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/adopciones/aprobar/${id}`, { 
             method: "PUT",
-            headers: { "Authorization": `Bearer ${token}` }
+            credentials: "include",
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json",
+                "CSRF-Token": csrfToken
+            }
         });
         if (!res.ok) throw new Error("Error al aprobar");
         alert("✅ Adopción aprobada"); 
@@ -468,6 +545,9 @@ window.aprobarAdopcion = async function(id) {
     }
 };
 
+// ===============================
+// ❌ RECHAZAR ADOPCIÓN (CON CSRF)
+// ===============================
 window.rechazarAdopcion = async function(id) { 
     const token = localStorage.getItem("accessToken");
     if (!token) { cerrarSesionAdmin(); return; }
@@ -475,7 +555,12 @@ window.rechazarAdopcion = async function(id) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/adopciones/rechazar/${id}`, { 
             method: "PUT",
-            headers: { "Authorization": `Bearer ${token}` }
+            credentials: "include",
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json",
+                "CSRF-Token": csrfToken
+            }
         });
         if (!res.ok) throw new Error("Error al rechazar");
         alert("❌ Adopción rechazada"); 
