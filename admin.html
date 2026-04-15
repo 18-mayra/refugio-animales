@@ -12,6 +12,19 @@
   <script src="JS/authGuard.js"></script>
   <script>soloAdmin();</script>
 
+  <!-- 🔥 AGREGAR HEADER CON MENÚ -->
+  <header>
+    <nav class="menu" aria-label="Menú principal">
+      <div class="logo">🐾 Refugio Admin</div>
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <ul class="menu-links" id="menuLinks">
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="admin.html" class="active">Panel Admin</a></li>
+        <li class="login" id="authLink"></li>  <!-- 👈 ESTO ES LO QUE FALTA -->
+      </ul>
+    </nav>
+  </header>
+
 <div class="admin-wrapper">
 <div class="admin-container">
 
@@ -101,7 +114,6 @@
 
 </div>
 </div>
-
 
 <script src="JS/api.js"></script>
 <script src="JS/auth.js"></script>
