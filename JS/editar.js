@@ -1,11 +1,13 @@
-// editar.js - Editar animal con imagen
+// editar.js - Editar animal con imagen (CORREGIDO)
 
 const API_URL = "http://localhost:3000";
 
 let csrfToken = "";
 let imagenUrlActual = "";
 
-// Obtener CSRF token
+// ===============================
+// 🔐 OBTENER CSRF
+// ===============================
 async function obtenerCSRF() {
     try {
         const res = await fetch(`${API_URL}/api/csrf-token`, {
@@ -19,17 +21,19 @@ async function obtenerCSRF() {
     }
 }
 
-// Subir imagen
+// ===============================
+// 🖼️ SUBIR IMAGEN
+// ===============================
 async function subirImagen(file) {
     if (!file) return null;
-    
+
     const formData = new FormData();
     formData.append('imagen', file);
-    
+
     try {
-        const token = localStorage.getItem("token");
-        console.log("📡 Subiendo imagen...", file.name);
-        
+        // ✅ CORREGIDO
+        const token = localStorage.getItem("accessToken");
+
         const res = await fetch(`${API_URL}/api/admin/upload`, {
             method: "POST",
             headers: {
@@ -38,24 +42,15 @@ async function subirImagen(file) {
             },
             body: formData
         });
-        
-        let data;
-        const text = await res.text();
-        
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            console.error("Error parsing:", text);
-            throw new Error("Respuesta inválida del servidor");
-        }
-        
+
+        const data = await res.json();
+
         if (!res.ok) {
             throw new Error(data.error || "Error al subir imagen");
         }
-        
-        console.log("✅ Imagen subida:", data.url);
+
         return data.url;
-        
+
     } catch (error) {
         console.error("❌ Error subiendo imagen:", error);
         alert("Error al subir la imagen: " + error.message);
@@ -63,31 +58,28 @@ async function subirImagen(file) {
     }
 }
 
-// Obtener ID de la URL
+// ===============================
+// 📌 OBTENER ID
+// ===============================
 const urlParams = new URLSearchParams(window.location.search);
 const animalId = urlParams.get('id');
 
-// Cargar datos del animal
+// ===============================
+// 📥 CARGAR ANIMAL
+// ===============================
 async function cargarAnimal() {
     if (!animalId) {
         alert("No se especificó ningún animal");
         window.location.href = "admin.html";
         return;
     }
-    
+
     try {
         const res = await fetch(`${API_URL}/animales/${animalId}`);
-        
-        if (!res.ok) {
-            throw new Error("Error al cargar animal");
-        }
-        
         const animal = await res.json();
-        
-        // Guardar URL de imagen actual
+
         imagenUrlActual = animal.imagen_url || "";
-        
-        // Llenar formulario
+
         document.getElementById("idAnimal").value = animal.id;
         document.getElementById("tipo").value = animal.tipo;
         document.getElementById("nombre").value = animal.nombre;
@@ -98,50 +90,46 @@ async function cargarAnimal() {
         document.getElementById("enfermedades").value = animal.enfermedades || "";
         document.getElementById("descripcion").value = animal.descripcion || "";
         document.getElementById("estado").value = animal.estado || "Disponible";
-        
-        // Mostrar imagen actual
+
         const imgPreview = document.getElementById("imgPreview");
-        if (imagenUrlActual && imagenUrlActual !== '/img/default.png') {
-            let imgUrl = imagenUrlActual.startsWith('http') 
-                ? imagenUrlActual 
+
+        if (imagenUrlActual) {
+            imgPreview.src = imagenUrlActual.startsWith("http")
+                ? imagenUrlActual
                 : `${API_URL}${imagenUrlActual}`;
-            imgPreview.src = imgUrl;
         } else {
-            // ✅ USAR PLACEHOLDER DE INTERNET
             imgPreview.src = "https://via.placeholder.com/200x200?text=Sin+Imagen";
         }
-        
+
     } catch (error) {
-        console.error("Error:", error);
-        alert("Error al cargar los datos del animal");
-        window.location.href = "admin.html";
+        console.error(error);
+        alert("Error al cargar el animal");
     }
 }
 
-// Guardar cambios
-async function guardarCambios(event) {
-    event.preventDefault();
-    
-    const token = localStorage.getItem("token");
-    
+// ===============================
+// 💾 GUARDAR CAMBIOS
+// ===============================
+async function guardarCambios(e) {
+    e.preventDefault();
+
+    // ✅ CORREGIDO
+    const token = localStorage.getItem("accessToken");
+
     if (!token) {
         alert("Debes iniciar sesión");
         window.location.href = "login.html";
         return;
     }
-    
-    const imagenFile = document.getElementById("imagen")?.files[0];
+
+    const imagenFile = document.getElementById("imagen").files[0];
     let nuevaImagenUrl = null;
-    
-    // Subir nueva imagen si hay
+
     if (imagenFile) {
         nuevaImagenUrl = await subirImagen(imagenFile);
-        if (!nuevaImagenUrl) {
-            alert("Error al subir la imagen. El animal no se guardó.");
-            return;
-        }
+        if (!nuevaImagenUrl) return;
     }
-    
+
     const datos = {
         tipo: document.getElementById("tipo").value,
         nombre: document.getElementById("nombre").value,
@@ -153,17 +141,11 @@ async function guardarCambios(event) {
         descripcion: document.getElementById("descripcion").value || null,
         estado: document.getElementById("estado").value
     };
-    
-    // Si se subió nueva imagen, actualizar URL
+
     if (nuevaImagenUrl) {
         datos.imagen_url = nuevaImagenUrl;
     }
-    
-    const btn = document.querySelector("button[type='submit']");
-    const originalText = btn.textContent;
-    btn.textContent = "💾 Guardando...";
-    btn.disabled = true;
-    
+
     try {
         const res = await fetch(`${API_URL}/admin/animales/${animalId}`, {
             method: "PUT",
@@ -174,83 +156,61 @@ async function guardarCambios(event) {
             },
             body: JSON.stringify(datos)
         });
-        
-        let data;
-        try {
-            data = await res.json();
-        } catch (e) {
-            throw new Error("Error del servidor");
-        }
-        
-        if (!res.ok) {
-            throw new Error(data.error || data.mensaje || "Error al guardar");
-        }
-        
-        alert("✅ Animal actualizado correctamente");
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error);
+
+        alert("✅ Actualizado correctamente");
         window.location.href = "admin.html";
-        
+
     } catch (error) {
-        console.error("Error:", error);
-        alert("❌ Error al guardar: " + error.message);
-        btn.textContent = originalText;
-        btn.disabled = false;
+        alert("❌ Error: " + error.message);
     }
 }
 
-// Vista previa de imagen al seleccionar
+// ===============================
+// 🖼️ PREVIEW
+// ===============================
 function setupImagePreview() {
-    const imagenInput = document.getElementById("imagen");
-    const imgPreview = document.getElementById("imgPreview");
-    
-    if (imagenInput) {
-        imagenInput.addEventListener("change", (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    imgPreview.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                // Restaurar imagen actual
-                if (imagenUrlActual && imagenUrlActual !== '/img/default.png') {
-                    let imgUrl = imagenUrlActual.startsWith('http') 
-                        ? imagenUrlActual 
-                        : `${API_URL}${imagenUrlActual}`;
-                    imgPreview.src = imgUrl;
-                } else {
-                    imgPreview.src = "https://via.placeholder.com/200x200?text=Sin+Imagen";
-                }
-            }
-        });
-    }
+    const input = document.getElementById("imagen");
+    const preview = document.getElementById("imgPreview");
+
+    input.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = e => preview.src = e.target.result;
+        reader.readAsDataURL(file);
+    });
 }
 
-// Configurar evento del formulario
-const form = document.getElementById("formEditar");
-if (form) {
-    form.addEventListener("submit", guardarCambios);
-}
-
-// Inicializar
+// ===============================
+// 🚀 INICIALIZAR
+// ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-    // Verificar autenticación
-    const token = localStorage.getItem("token");
+
+    // ✅ CORREGIDO
+    const token = localStorage.getItem("accessToken");
     const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
-    
+
     if (!token) {
         alert("Debes iniciar sesión");
         window.location.href = "login.html";
         return;
     }
-    
+
     if (usuario.rol !== "admin" && usuario.rol !== "superadmin") {
-        alert("Acceso solo para administradores");
+        alert("Acceso solo admin");
         window.location.href = "index.html";
         return;
     }
-    
+
     await obtenerCSRF();
     setupImagePreview();
     cargarAnimal();
 });
+
+const form = document.getElementById("formEditar");
+if (form) form.addEventListener("submit", guardarCambios);
