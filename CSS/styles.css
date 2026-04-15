@@ -1813,3 +1813,64 @@ footer {
     margin: 0 auto;
     display: block;
 }
+/* Estilos para la sección del código */
+        .codigo-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .codigo-input {
+            text-align: center;
+            font-size: 28px;
+            letter-spacing: 10px;
+            font-weight: bold;
+            font-family: monospace;
+            padding: 10px;
+            width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        .user-email {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .timer {
+            color: #666;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .notificacion {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease;
+        }
+        .notificacion.exito {
+            background: #4CAF50;
+            color: white;
+        }
+        .notificacion.error {
+            background: #f44336;
+            color: white;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }

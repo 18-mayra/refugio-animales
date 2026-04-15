@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="CSS/styles.css">
     <link rel="stylesheet" href="CSS/base.css">
     <link rel="stylesheet" href="CSS/animations.css">
+    <style>
+    </style>
 </head>
 <body>
 
@@ -35,26 +37,51 @@
     <div class="login-container">
         <h1>🔐 Iniciar Sesión</h1>
 
-        <form id="loginForm">
-            <input type="email" id="email" placeholder="Correo electrónico" required>
-            
-            <div class="password-container">
-                <input type="password" id="password" placeholder="Contraseña" required>
-                <button type="button" class="toggle-password" onclick="togglePassword('password')"></button>
+        <!-- SECCIÓN DE LOGIN (PASO 1) -->
+        <div id="loginSection">
+            <form id="loginForm">
+                <input type="email" id="email" placeholder="Correo electrónico" required>
+                
+                <div class="password-container">
+                    <input type="password" id="password" placeholder="Contraseña" required>
+                    <button type="button" class="toggle-password" onclick="togglePassword('password')"></button>
+                </div>
+
+                <!-- CAPTCHA ALEATORIO -->
+                <div class="captcha-container">
+                    <label>Verificación: ¿Cuánto es <span id="captchaNum1">5</span> + <span id="captchaNum2">3</span>?</label>
+                    <input type="number" id="captchaInput" placeholder="Escribe el resultado" required>
+                    <input type="hidden" id="captchaResultado" value="8">
+                </div>
+
+                <button type="submit">Ingresar</button>
+            </form>
+
+            <p>¿No tienes cuenta? <a href="registro.html">Registrarse</a></p>
+            <p><a href="recuperar.html" class="forgot-password">¿Olvidaste tu contraseña?</a></p>
+        </div>
+
+        <!-- SECCIÓN DEL CÓDIGO (PASO 2 - aparece después de enviar email) -->
+        <div id="codigoSection" style="display: none;">
+            <div class="codigo-section">
+                <div class="user-email">
+                    📧 Código enviado a: <strong id="userEmail"></strong>
+                </div>
+                
+                <form id="codigoForm">
+                    <input type="text" id="codigo" class="codigo-input" 
+                           placeholder="000000" maxlength="6" autocomplete="off">
+                    <button type="submit" class="btn" id="verificarBtn">VERIFICAR CÓDIGO</button>
+                </form>
+                
+                <div class="timer">
+                    ⏱️ Tiempo restante: <span id="timer">10:00</span>
+                </div>
+                
+                <button type="button" class="btn-secondary" id="reenviarCodigo" disabled>Reenviar código</button>
+                <button type="button" class="btn-secondary" onclick="volverALogin()" style="margin-top: 10px;">Volver</button>
             </div>
-
-            <!-- CAPTCHA ALEATORIO -->
-            <div class="captcha-container">
-                <label>Verificación: ¿Cuánto es <span id="captchaNum1">5</span> + <span id="captchaNum2">3</span>?</label>
-                <input type="number" id="captchaInput" placeholder="Escribe el resultado" required>
-                <input type="hidden" id="captchaResultado" value="8">
-            </div>
-
-            <button type="submit">Ingresar</button>
-        </form>
-
-        <p>¿No tienes cuenta? <a href="registro.html">Registrarse</a></p>
-        <p><a href="recuperar.html" class="forgot-password">¿Olvidaste tu contraseña?</a></p>
+        </div>
     </div>
 </div>
 
@@ -73,8 +100,8 @@
 
     // Generar CAPTCHA aleatorio
     function generarCaptcha() {
-        const num1 = Math.floor(Math.random() * 10) + 1; // 1-10
-        const num2 = Math.floor(Math.random() * 10) + 1; // 1-10
+        const num1 = Math.floor(Math.random() * 10) + 1;
+        const num2 = Math.floor(Math.random() * 10) + 1;
         const resultado = num1 + num2;
         
         document.getElementById("captchaNum1").textContent = num1;
@@ -82,7 +109,14 @@
         document.getElementById("captchaResultado").value = resultado;
     }
 
-    // Generar CAPTCHA al cargar la página
+    // Función para volver al login (debe estar disponible globalmente)
+    window.volverALogin = function() {
+        document.getElementById("codigoSection").style.display = "none";
+        document.getElementById("loginSection").style.display = "block";
+        document.getElementById("codigo").value = "";
+        generarCaptcha();
+    };
+
     document.addEventListener("DOMContentLoaded", generarCaptcha);
 </script>
 
