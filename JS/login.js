@@ -1,250 +1,365 @@
-console.log("🔥 SERVER ARRANCANDO");
+// JS/login.js - Sistema de login con código de verificación (2FA por email)
 
-require("dotenv").config();
+// Configuración
+const API_BASE_URL = window.location.origin;
+let userIdGlobal = null;
+let tiempoRestante = 0;
+let intervaloReloj = null;
 
-const express = require("express");
-const cors = require("cors");
-const path = require("path");
-const db = require("./db");
-const csrf = require("csurf");
-const cookieParser = require("cookie-parser");
+// ===============================
+// INICIALIZAR PÁGINA
+// ===============================
+document.addEventListener("DOMContentLoaded", () => {
+    // Verificar si ya hay sesión activa
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+        window.location.href = "/";
+        return;
+    }
 
-// 🔐 MIDDLEWARES
-const auth = require("./middlewares/authMiddleware");
-const role = require("./middlewares/roleMiddleware");
-const auditoria = require("./middlewares/auditoria");
-
-// 📦 RUTAS
-const usuariosRoutes = require("./routes/usuarios");
-const animalesRoutes = require("./routes/animales");
-const adopcionesRoutes = require("./routes/adopciones");
-const adminRoutes = require("./routes/adminRoutes");
-const passwordRoutes = require("./routes/passwordRoutes");
-const mfaRoutes = require("./routes/mfaRoutes");
-const sessionRoutes = require("./routes/sessionRoutes");
-const tokenRoutes = require("./routes/tokenRoutes");
-const userSettingsRoutes = require("./routes/userSettings");
-const contactoRoutes = require("./routes/contactoRoutes");
-
-// 📧 EMAIL (Brevo)
-const enviarCorreo = require("./utils/mailer");
-
-const app = express();
-app.set("trust proxy", 1);
-
-// =============================
-// 🔒 SEGURIDAD BASE
-// =============================
-app.use(cookieParser());
-app.use(express.json());
-
-// Servir archivos estáticos (HTML, CSS, JS)
-app.use(express.static(__dirname));
-app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
-app.use("/img", express.static(path.join(__dirname, "img")));
-app.use("/CSS", express.static(path.join(__dirname, "CSS")));
-app.use("/JS", express.static(path.join(__dirname, "JS")));
-
-// =============================
-// 🏠 RUTAS PRINCIPALES
-// =============================
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "index.html"));
-});
-app.get("/index.html", (req, res) => {
-    res.sendFile(path.join(__dirname, "index.html"));
-});
-app.get("/login.html", (req, res) => {
-    res.sendFile(path.join(__dirname, "login.html"));
-});
-app.get("/registro.html", (req, res) => {
-    res.sendFile(path.join(__dirname, "registro.html"));
-});
-app.get("/perros.html", (req, res) => {
-    res.sendFile(path.join(__dirname, "perros.html"));
-});
-app.get("/gatos.html", (req, res) => {
-    res.sendFile(path.join(__dirname, "gatos.html"));
-});
-app.get("/admin.html", (req, res) => {
-    res.sendFile(path.join(__dirname, "admin.html"));
-});
-app.get("/recuperar.html", (req, res) => {
-    res.sendFile(path.join(__dirname, "recuperar.html"));
-});
-app.get("/contactanos.html", (req, res) => {
-    res.sendFile(path.join(__dirname, "contactanos.html"));
-});
-app.get("/solicitud.html", (req, res) => {
-    res.sendFile(path.join(__dirname, "solicitud.html"));
+    // Configurar elementos del DOM
+    configurarElementos();
+    
+    // Cargar temas guardados
+    cargarTema();
 });
 
-// =============================
-// 🌐 CORS
-// =============================
-const allowedOrigins = [
-    "http://localhost:5500",
-    "http://127.0.0.1:5500",
-    "http://localhost:3000",
-    "https://refugio-animales.onrender.com"
-];
+// ===============================
+// CONFIGURAR ELEMENTOS DEL DOM
+// ===============================
+function configurarElementos() {
+    // Formulario de login
+    const loginForm = document.getElementById("loginForm");
+    if (loginForm) {
+        loginForm.addEventListener("submit", enviarCredenciales);
+    }
+    
+    // Formulario de código
+    const codigoForm = document.getElementById("codigoForm");
+    if (codigoForm) {
+        codigoForm.addEventListener("submit", verificarCodigo);
+    }
+    
+    // Botón de reenviar código
+    const reenviarBtn = document.getElementById("reenviarCodigo");
+    if (reenviarBtn) {
+        reenviarBtn.addEventListener("click", reenviarCodigo);
+    }
+    
+    // Mostrar/ocultar contraseña
+    const togglePassword = document.getElementById("togglePassword");
+    if (togglePassword) {
+        togglePassword.addEventListener("click", () => {
+            const passwordInput = document.getElementById("password");
+            const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+            passwordInput.setAttribute("type", type);
+            togglePassword.textContent = type === "password" ? "👁️" : "🙈";
+        });
+    }
+}
 
-app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            console.log("CORS bloqueado para:", origin);
-            callback(new Error("CORS bloqueado"));
+// ===============================
+// PASO 1: ENVIAR EMAIL Y CONTRASEÑA
+// ===============================
+async function enviarCredenciales(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    
+    if (!email || !password) {
+        mostrarNotificacion("Por favor, completa todos los campos", "error");
+        return;
+    }
+    
+    mostrarLoading(true);
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/usuarios/login/enviar-codigo`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.mensaje || data.error || "Error al enviar credenciales");
         }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization", "CSRF-Token"]
-}));
-
-// =============================
-// 🔐 CSRF CONFIG
-// =============================
-const csrfProtection = csrf({
-    cookie: {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: false
+        
+        userIdGlobal = data.userId;
+        mostrarSeccionCodigo(email);
+        iniciarTemporizador(600);
+        mostrarNotificacion("📧 ¡Código enviado! Revisa tu bandeja de entrada o la carpeta de SPAM", "exito");
+        
+    } catch (error) {
+        mostrarNotificacion(error.message, "error");
+    } finally {
+        mostrarLoading(false);
     }
-});
+}
 
-app.get("/api/csrf-token", csrfProtection, (req, res) => {
-    res.json({ csrfToken: req.csrfToken() });
-});
-
-app.use((req, res, next) => {
-    if (req.method === "GET") return next();
-
-    const rutasLibres = [
-        "/api/usuarios/login",
-        "/api/usuarios/registro",
-        "/api/usuarios/login/enviar-codigo",
-        "/api/usuarios/login/verificar-codigo",
-        "/api/mfa/send",
-        "/api/mfa/verify",
-        "/api/usuarios/refresh",
-        "/api/usuarios/logout",
-        "/api/adopciones",
-        "/api/adopciones/aprobar",
-        "/api/adopciones/rechazar",
-        "/api/password/recuperar",
-        "/api/password/reset",
-        "/api/admin/upload",
-        "/api/contacto"
-    ];
-
-    if (rutasLibres.includes(req.path)) return next();
-
-    csrfProtection(req, res, next);
-});
-
-// =============================
-// 📦 RUTAS API
-// =============================
-app.use("/api/usuarios", usuariosRoutes);
-app.use("/api/adopciones", adopcionesRoutes);
-app.use("/api/admin", auth, role("admin"), adminRoutes);
-app.use("/api/mfa", mfaRoutes);
-app.use("/api/password", passwordRoutes);
-app.use("/api/sessions", sessionRoutes);
-app.use("/api/token", tokenRoutes);
-app.use("/api/settings", userSettingsRoutes);
-app.use("/api/contacto", contactoRoutes);
-app.use("/animales", animalesRoutes);
-app.use("/admin/animales", auth, auditoria, animalesRoutes);
-
-// =============================
-// 🔎 BÚSQUEDA
-// =============================
-app.get("/busqueda", (req, res) => {
-    const texto = req.query.texto;
-    db.query("SELECT * FROM animales WHERE nombre LIKE ? OR raza LIKE ?", [`%${texto}%`, `%${texto}%`], (err, result) => {
-        if (err) return res.status(500).json({ error: "Error" });
-        res.json(result);
-    });
-});
-
-app.get("/filtro", (req, res) => {
-    const { edad } = req.query;
-    let sql = "SELECT * FROM animales WHERE 1=1";
-    let params = [];
-    if (edad) {
-        const [min, max] = edad.split("-");
-        sql += " AND edad BETWEEN ? AND ?";
-        params.push(parseInt(min), parseInt(max));
-    }
-    db.query(sql, params, (err, result) => {
-        if (err) return res.status(500).json({ error: "Error" });
-        res.json(result);
-    });
-});
-
-// =============================
-// 📧 ENDPOINT DE PRUEBA PARA BREVO
-// =============================
-app.get("/test-email", async (req, res) => {
-    console.log("🧪 Probando envío de email con Brevo...");
+// ===============================
+// PASO 2: VERIFICAR CÓDIGO Y COMPLETAR LOGIN
+// ===============================
+async function verificarCodigo(event) {
+    event.preventDefault();
     
-    const resultado = await enviarCorreo(
-        "psgm.3112@gmail.com",
-        "✅ Prueba Brevo - Refugio de Animales",
-        "Si estás leyendo esto, la configuración de Brevo funciona perfectamente.",
-        `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-            <h2 style="color: #4CAF50;">🐾 ¡Prueba exitosa!</h2>
-            <p>Si estás viendo este correo, la configuración de <strong>Brevo</strong> está funcionando correctamente.</p>
-            <div style="background-color: #f4f4f4; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                <p><strong>✅ Estado:</strong> Conectado</p>
-                <p><strong>📧 Email:</strong> ${process.env.EMAIL_USER}</p>
-                <p><strong>🕐 Fecha:</strong> ${new Date().toLocaleString()}</p>
-            </div>
-            <hr>
-            <p style="font-size: 12px; color: #666;">Refugio de Animales - Configuración de email exitosa 🎉</p>
-        </div>
-        `
-    );
+    const codigo = document.getElementById("codigo").value.trim();
     
-    if (resultado.success) {
-        res.send(`
-            <html>
-                <head><title>Email Enviado ✅</title></head>
-                <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-                    <h1 style="color: #4CAF50;">✅ Email enviado correctamente</h1>
-                    <p>Revisa la bandeja de entrada de <strong>psgm.3112@gmail.com</strong></p>
-                    <p>Message ID: ${resultado.messageId}</p>
-                    <a href="/" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Volver al inicio</a>
-                </body>
-            </html>
-        `);
-    } else {
-        res.status(500).send(`
-            <html>
-                <head><title>Error de Email ❌</title></head>
-                <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-                    <h1 style="color: #f44336;">❌ Error al enviar email</h1>
-                    <p>Error: ${JSON.stringify(resultado.error)}</p>
-                    <p>Verifica que BREVO_API_KEY y EMAIL_USER estén configurados en Render</p>
-                    <a href="/" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Volver al inicio</a>
-                </body>
-            </html>
-        `);
+    if (!codigo || codigo.length !== 6) {
+        mostrarNotificacion("Por favor, ingresa el código de 6 dígitos", "error");
+        return;
     }
-});
+    
+    if (!userIdGlobal) {
+        mostrarNotificacion("Error: Identificación de usuario no encontrada. Intenta nuevamente.", "error");
+        reiniciarLogin();
+        return;
+    }
+    
+    mostrarLoading(true);
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/usuarios/login/verificar-codigo`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: userIdGlobal, codigo: codigo })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || "Código inválido o expirado");
+        }
+        
+        if (data.success && data.accessToken) {
+            localStorage.setItem("accessToken", data.accessToken);
+            if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+            if (data.usuario) localStorage.setItem("usuario", JSON.stringify(data.usuario));
+            
+            mostrarNotificacion("✅ ¡Bienvenido! Redirigiendo...", "exito");
+            
+            setTimeout(() => {
+                if (data.usuario?.rol === "admin" || data.usuario?.rol === "superadmin") {
+                    window.location.href = "/admin.html";
+                } else {
+                    window.location.href = "/";
+                }
+            }, 1500);
+        }
+        
+    } catch (error) {
+        mostrarNotificacion(error.message, "error");
+    } finally {
+        mostrarLoading(false);
+    }
+}
 
-// =============================
-// 🚀 SERVIDOR
-// =============================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor en http://localhost:${PORT}`);
-    console.log(`✅ Conectado a MySQL`);
-    console.log(`📧 Brevo configurado - Email: ${process.env.EMAIL_USER}`);
-    console.log(`🧪 Prueba email: http://localhost:${PORT}/test-email`);
-});
+// ===============================
+// REENVIAR CÓDIGO
+// ===============================
+async function reenviarCodigo() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    
+    if (!email || !password) {
+        mostrarNotificacion("Por favor, ingresa tu email y contraseña nuevamente", "error");
+        reiniciarLogin();
+        return;
+    }
+    
+    mostrarLoading(true);
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/usuarios/login/enviar-codigo`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) throw new Error(data.mensaje || "Error al reenviar código");
+        
+        userIdGlobal = data.userId;
+        if (intervaloReloj) clearInterval(intervaloReloj);
+        iniciarTemporizador(600);
+        mostrarNotificacion("📧 Código reenviado. Revisa tu correo.", "exito");
+        
+    } catch (error) {
+        mostrarNotificacion(error.message, "error");
+    } finally {
+        mostrarLoading(false);
+    }
+}
+
+// ===============================
+// MOSTRAR SECCIÓN DEL CÓDIGO
+// ===============================
+function mostrarSeccionCodigo(email) {
+    const loginSection = document.getElementById("loginSection");
+    if (loginSection) loginSection.style.display = "none";
+    
+    const codigoSection = document.getElementById("codigoSection");
+    if (codigoSection) codigoSection.style.display = "block";
+    
+    const emailSpan = document.getElementById("userEmail");
+    if (emailSpan) emailSpan.textContent = email;
+    
+    const codigoInput = document.getElementById("codigo");
+    if (codigoInput) codigoInput.value = "";
+    codigoInput?.focus();
+}
+
+// ===============================
+// INICIAR TEMPORIZADOR
+// ===============================
+function iniciarTemporizador(segundos) {
+    tiempoRestante = segundos;
+    actualizarTemporizadorDisplay();
+    
+    if (intervaloReloj) clearInterval(intervaloReloj);
+    
+    intervaloReloj = setInterval(() => {
+        if (tiempoRestante <= 0) {
+            clearInterval(intervaloReloj);
+            intervaloReloj = null;
+            habilitarReenvio(true);
+            actualizarTemporizadorDisplay("Código expirado");
+        } else {
+            tiempoRestante--;
+            actualizarTemporizadorDisplay();
+            habilitarReenvio(false);
+        }
+    }, 1000);
+}
+
+// ===============================
+// ACTUALIZAR DISPLAY DEL TEMPORIZADOR
+// ===============================
+function actualizarTemporizadorDisplay(mensaje = null) {
+    const timerElement = document.getElementById("timer");
+    if (!timerElement) return;
+    
+    if (mensaje) {
+        timerElement.textContent = mensaje;
+        timerElement.style.color = "#f44336";
+        return;
+    }
+    
+    const minutos = Math.floor(tiempoRestante / 60);
+    const segundos = tiempoRestante % 60;
+    timerElement.textContent = `${minutos.toString().padStart(2, "0")}:${segundos.toString().padStart(2, "0")}`;
+    timerElement.style.color = tiempoRestante < 60 ? "#f44336" : "#666";
+}
+
+// ===============================
+// HABILITAR/DESAHABILITAR BOTÓN REENVIAR
+// ===============================
+function habilitarReenvio(habilitado) {
+    const reenviarBtn = document.getElementById("reenviarCodigo");
+    if (!reenviarBtn) return;
+    
+    reenviarBtn.disabled = !habilitado;
+    reenviarBtn.style.opacity = habilitado ? "1" : "0.5";
+    reenviarBtn.style.cursor = habilitado ? "pointer" : "not-allowed";
+}
+
+// ===============================
+// REINICIAR LOGIN (VOLVER AL INICIO)
+// ===============================
+function reiniciarLogin() {
+    if (intervaloReloj) clearInterval(intervaloReloj);
+    userIdGlobal = null;
+    
+    const codigoSection = document.getElementById("codigoSection");
+    if (codigoSection) codigoSection.style.display = "none";
+    
+    const loginSection = document.getElementById("loginSection");
+    if (loginSection) loginSection.style.display = "block";
+    
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    if (emailInput) emailInput.value = "";
+    if (passwordInput) passwordInput.value = "";
+    emailInput?.focus();
+}
+
+// ===============================
+// MOSTRAR NOTIFICACIÓN
+// ===============================
+function mostrarNotificacion(mensaje, tipo = "info") {
+    const notificacion = document.createElement("div");
+    notificacion.className = `notificacion ${tipo}`;
+    notificacion.innerHTML = `<span>${tipo === "exito" ? "✅" : tipo === "error" ? "❌" : "ℹ️"} ${mensaje}</span>`;
+    
+    notificacion.style.position = "fixed";
+    notificacion.style.top = "20px";
+    notificacion.style.right = "20px";
+    notificacion.style.zIndex = "9999";
+    notificacion.style.backgroundColor = tipo === "exito" ? "#4CAF50" : tipo === "error" ? "#f44336" : "#2196F3";
+    notificacion.style.color = "white";
+    notificacion.style.padding = "15px 20px";
+    notificacion.style.borderRadius = "8px";
+    notificacion.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+    notificacion.style.animation = "slideIn 0.3s ease";
+    
+    document.body.appendChild(notificacion);
+    
+    setTimeout(() => {
+        notificacion.style.animation = "slideOut 0.3s ease";
+        setTimeout(() => {
+            if (notificacion && notificacion.remove) notificacion.remove();
+        }, 300);
+    }, 5000);
+}
+
+// ===============================
+// MOSTRAR LOADING
+// ===============================
+function mostrarLoading(mostrar) {
+    const loginBtn = document.getElementById("loginBtn");
+    const verificarBtn = document.getElementById("verificarBtn");
+    
+    if (loginBtn) {
+        loginBtn.disabled = mostrar;
+        loginBtn.textContent = mostrar ? "ENVIANDO..." : "INICIAR SESIÓN";
+    }
+    
+    if (verificarBtn) {
+        verificarBtn.disabled = mostrar;
+        verificarBtn.textContent = mostrar ? "VERIFICANDO..." : "VERIFICAR CÓDIGO";
+    }
+}
+
+// ===============================
+// CARGAR TEMA GUARDADO
+// ===============================
+function cargarTema() {
+    const tema = localStorage.getItem("tema");
+    if (tema === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+}
+
+// ===============================
+// BOTÓN VOLVER
+// ===============================
+function volverALogin() {
+    reiniciarLogin();
+}
+
+// Agregar estilos de animación
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
