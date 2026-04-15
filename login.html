@@ -51,7 +51,7 @@
                 <input type="hidden" id="captchaResultado" value="8">
             </div>
 
-            <button type="button" id="loginBtn" onclick="enviarCredenciales()">Ingresar</button>
+            <button type="button" id="loginBtn">Ingresar</button>
 
             <p>¿No tienes cuenta? <a href="registro.html">Registrarse</a></p>
             <p><a href="recuperar.html" class="forgot-password">¿Olvidaste tu contraseña?</a></p>
@@ -67,21 +67,19 @@
                 <input type="text" id="codigo" class="codigo-input" 
                        placeholder="000000" maxlength="6" autocomplete="off">
                 
-                <button type="button" class="btn" id="verificarBtn" onclick="verificarCodigo()">VERIFICAR CÓDIGO</button>
+                <button type="button" id="verificarBtn">VERIFICAR CÓDIGO</button>
                 
                 <div class="timer">
                     ⏱️ Tiempo restante: <span id="timer">10:00</span>
                 </div>
                 
-                <button type="button" class="btn-secondary" id="reenviarCodigo" onclick="reenviarCodigo()" disabled>Reenviar código</button>
-                <button type="button" class="btn-secondary" onclick="volverALogin()">Volver</button>
+                <button type="button" class="btn-secondary" id="reenviarCodigo" disabled>Reenviar código</button>
+                <button type="button" class="btn-secondary" id="volverLoginBtn">Volver</button>
             </div>
         </div>
     </div>
 </div>
 
-<script src="JS/api.js"></script>
-<script src="JS/auth.js"></script>
 <script src="JS/login.js"></script>
 <script src="JS/menu.js"></script>
 </body>

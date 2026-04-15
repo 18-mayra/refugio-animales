@@ -18,13 +18,19 @@ document.addEventListener("DOMContentLoaded", () => {
     
     generarCaptcha();
     
+    // Configurar eventos
+    document.getElementById("loginBtn").onclick = enviarCredenciales;
+    document.getElementById("verificarBtn").onclick = verificarCodigo;
+    document.getElementById("reenviarCodigo").onclick = reenviarCodigo;
+    document.getElementById("volverLoginBtn").onclick = volverALogin;
+    
     // Mostrar/ocultar contraseña
     const toggleBtn = document.getElementById("togglePasswordBtn");
     if (toggleBtn) {
-        toggleBtn.addEventListener("click", () => {
+        toggleBtn.onclick = () => {
             const pwd = document.getElementById("password");
             pwd.type = pwd.type === "password" ? "text" : "password";
-        });
+        };
     }
 });
 
@@ -34,28 +40,21 @@ document.addEventListener("DOMContentLoaded", () => {
 function generarCaptcha() {
     const num1 = Math.floor(Math.random() * 10) + 1;
     const num2 = Math.floor(Math.random() * 10) + 1;
-    const captchaNum1 = document.getElementById("captchaNum1");
-    const captchaNum2 = document.getElementById("captchaNum2");
-    const captchaResultado = document.getElementById("captchaResultado");
-    
-    if (captchaNum1) captchaNum1.textContent = num1;
-    if (captchaNum2) captchaNum2.textContent = num2;
-    if (captchaResultado) captchaResultado.value = num1 + num2;
+    document.getElementById("captchaNum1").textContent = num1;
+    document.getElementById("captchaNum2").textContent = num2;
+    document.getElementById("captchaResultado").value = num1 + num2;
 }
 
 // ===============================
 // VALIDAR CAPTCHA
 // ===============================
 function validarCaptcha() {
-    const captchaInput = document.getElementById("captchaInput");
-    const captchaResultado = document.getElementById("captchaResultado");
-    
-    if (!captchaInput || !captchaResultado) return true;
-    
-    if (parseInt(captchaInput.value) !== parseInt(captchaResultado.value)) {
+    const input = document.getElementById("captchaInput").value;
+    const resultado = document.getElementById("captchaResultado").value;
+    if (parseInt(input) !== parseInt(resultado)) {
         mostrarNotificacion("❌ Captcha incorrecto", "error");
         generarCaptcha();
-        captchaInput.value = "";
+        document.getElementById("captchaInput").value = "";
         return false;
     }
     return true;
@@ -79,7 +78,7 @@ function mostrarNotificacion(mensaje, tipo) {
 // ===============================
 // PASO 1: ENVIAR CREDENCIALES
 // ===============================
-window.enviarCredenciales = async function() {
+async function enviarCredenciales() {
     if (!validarCaptcha()) return;
     
     const email = document.getElementById("email").value.trim();
@@ -113,12 +112,12 @@ window.enviarCredenciales = async function() {
     } catch (error) {
         mostrarNotificacion(error.message, "error");
     }
-};
+}
 
 // ===============================
 // PASO 2: VERIFICAR CÓDIGO
 // ===============================
-window.verificarCodigo = async function() {
+async function verificarCodigo() {
     const codigo = document.getElementById("codigo").value.trim();
     
     if (!codigo || codigo.length !== 6) {
@@ -148,7 +147,7 @@ window.verificarCodigo = async function() {
         if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
         if (data.usuario) localStorage.setItem("usuario", JSON.stringify(data.usuario));
         
-        mostrarNotificacion("✅ ¡Bienvenido!", "exito");
+        mostrarNotificacion("✅ ¡Bienvenido " + (data.usuario?.nombre || "") + "!", "exito");
         
         setTimeout(() => {
             window.location.href = "/";
@@ -157,12 +156,12 @@ window.verificarCodigo = async function() {
     } catch (error) {
         mostrarNotificacion(error.message, "error");
     }
-};
+}
 
 // ===============================
 // REENVIAR CÓDIGO
 // ===============================
-window.reenviarCodigo = async function() {
+async function reenviarCodigo() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
     
@@ -186,7 +185,7 @@ window.reenviarCodigo = async function() {
     } catch (error) {
         mostrarNotificacion(error.message, "error");
     }
-};
+}
 
 // ===============================
 // TEMPORIZADOR
@@ -200,11 +199,7 @@ function iniciarTemporizador(segundos) {
     intervaloReloj = setInterval(() => {
         if (tiempoRestante <= 0) {
             clearInterval(intervaloReloj);
-            const reenviarBtn = document.getElementById("reenviarCodigo");
-            if (reenviarBtn) {
-                reenviarBtn.disabled = false;
-                reenviarBtn.style.opacity = "1";
-            }
+            document.getElementById("reenviarCodigo").disabled = false;
             document.getElementById("timer").textContent = "Código expirado";
         } else {
             tiempoRestante--;
@@ -216,16 +211,13 @@ function iniciarTemporizador(segundos) {
 function actualizarTimer() {
     const minutos = Math.floor(tiempoRestante / 60);
     const segundos = tiempoRestante % 60;
-    const timerElement = document.getElementById("timer");
-    if (timerElement) {
-        timerElement.textContent = `${minutos}:${segundos.toString().padStart(2, "0")}`;
-    }
+    document.getElementById("timer").textContent = `${minutos}:${segundos.toString().padStart(2, "0")}`;
 }
 
 // ===============================
 // VOLVER AL LOGIN
 // ===============================
-window.volverALogin = function() {
+function volverALogin() {
     if (intervaloReloj) clearInterval(intervaloReloj);
     userIdGlobal = null;
     
@@ -233,4 +225,4 @@ window.volverALogin = function() {
     document.getElementById("loginSection").style.display = "block";
     document.getElementById("codigo").value = "";
     generarCaptcha();
-};
+}
