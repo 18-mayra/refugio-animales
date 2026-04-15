@@ -1,263 +1,240 @@
-// admin.js - Panel de administración
+// JS/login.js - Login con verificación por email y mantenimiento de sesión
 
-let animalesGlobal = [];
-let csrfToken = "";
-
-function escaparHTML(texto) {
-    if (!texto) return "";
-    return texto.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
-
-// ✅ CORREGIDO: Usar URL base dinámica
 const API_BASE_URL = window.location.origin;
+let userIdGlobal = null;
+let tiempoRestante = 0;
+let intervaloReloj = null;
 
-async function obtenerCSRF() {
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/csrf-token`, { credentials: "include" });
-        const data = await res.json();
-        csrfToken = data.csrfToken;
-        console.log("✅ CSRF Token obtenido");
-    } catch (error) { console.error("Error CSRF:", error); }
-}
-
-async function subirImagen(file) {
-    if (!file) return null;
-    const formData = new FormData();
-    formData.append('imagen', file);
-    try {
-        // ✅ CORREGIDO: usar accessToken en lugar de token
-        const token = localStorage.getItem("accessToken");
-        console.log("📡 Subiendo imagen:", file.name);
-        
-        const res = await fetch(`${API_BASE_URL}/api/admin/upload`, {
-            method: "POST",
-            headers: { "Authorization": "Bearer " + token },
-            body: formData
-        });
-        
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        console.log("✅ Imagen subida:", data.url);
-        return data.url;
-    } catch (error) {
-        console.error("❌ Error subiendo imagen:", error);
-        alert("Error al subir la imagen: " + error.message);
-        return null;
-    }
-}
-
-function getImagenUrl(imagenUrl) {
-    if (!imagenUrl || imagenUrl === '/img/default.png') {
-        return `${API_BASE_URL}/img/perro.png`;
-    }
-    if (imagenUrl.startsWith('/uploads/')) {
-        return `${API_BASE_URL}${imagenUrl}`;
-    }
-    if (imagenUrl.startsWith('img/')) {
-        return `${API_BASE_URL}/${imagenUrl}`;
-    }
-    if (imagenUrl.startsWith('http')) {
-        return imagenUrl;
-    }
-    return `${API_BASE_URL}/img/perro.png`;
-}
-
-document.addEventListener("DOMContentLoaded", async () => {
-    await obtenerCSRF();
-    // ✅ CORREGIDO: usar accessToken
+// ===============================
+// INICIALIZAR
+// ===============================
+document.addEventListener("DOMContentLoaded", () => {
+    // Verificar si ya hay sesión activa
     const token = localStorage.getItem("accessToken");
-    if (!token) { alert("Debes iniciar sesión"); window.location.href = "login.html"; return; }
-    try {
-        const data = await API.request("/api/usuarios/token/validar");
-        const usuario = data.usuario || data.user;
-        if (!usuario) throw new Error("Token inválido");
-        const rol = String(usuario.rol || "").toLowerCase().trim();
-        if (!rol.includes("admin")) { alert("Acceso solo para administradores"); localStorage.clear(); window.location.href = "login.html"; return; }
-        iniciarAdmin();
-    } catch (error) { console.error(error); localStorage.clear(); window.location.href = "login.html"; }
+    if (token) {
+        // ✅ Redirigir según rol si ya hay sesión
+        const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+        if (usuario.rol === "admin" || usuario.rol === "superadmin") {
+            window.location.href = "/admin.html";
+        } else {
+            window.location.href = "/";
+        }
+        return;
+    }
+    
+    generarCaptcha();
+    
+    // Configurar eventos
+    document.getElementById("loginBtn").onclick = enviarCredenciales;
+    document.getElementById("verificarBtn").onclick = verificarCodigo;
+    document.getElementById("reenviarCodigo").onclick = reenviarCodigo;
+    document.getElementById("volverLoginBtn").onclick = volverALogin;
+    
+    // Mostrar/ocultar contraseña
+    const toggleBtn = document.getElementById("togglePasswordBtn");
+    if (toggleBtn) {
+        toggleBtn.onclick = () => {
+            const pwd = document.getElementById("password");
+            pwd.type = pwd.type === "password" ? "text" : "password";
+        };
+    }
 });
 
-function iniciarAdmin() {
-    const form = document.getElementById("formAnimal");
-    const lista = document.getElementById("listaAnimales");
-    const buscador = document.getElementById("buscador");
-    const tipo = document.getElementById("tipo"), nombre = document.getElementById("nombre"), edad = document.getElementById("edad");
-    const raza = document.getElementById("raza"), comportamiento = document.getElementById("comportamiento");
-    const vacunas = document.getElementById("vacunas"), enfermedades = document.getElementById("enfermedades");
-    const descripcion = document.getElementById("descripcion"), estado = document.getElementById("estado");
-    const filtroTipo = document.getElementById("filtroTipo"), filtroEstado = document.getElementById("filtroEstado");
-
-    async function cargarAnimales() { 
-        try { 
-            animalesGlobal = await API.obtenerAnimales(); 
-            mostrarAnimales(animalesGlobal); 
-        } catch (error) { console.error(error); } 
-    }
-    
-    async function cargarSesiones() {
-        const contenedor = document.getElementById("sesiones");
-        if (!contenedor) return;
-        try {
-            const data = await API.request("/api/usuarios/sessions");
-            if (!data || data.length === 0) {
-                contenedor.innerHTML = "<h2>🖥️ Sesiones activas</h2><p>No hay sesiones activas</p>";
-                return;
-            }
-            contenedor.innerHTML = `<h2>🖥️ Sesiones activas (${data.length})</h2>` + 
-                data.map(s => `<div class="card-admin-session">
-                    <p><strong>👤 Usuario:</strong> ${escaparHTML(s.nombre)} (${escaparHTML(s.email)})</p>
-                    <p><strong>🌐 IP:</strong> ${escaparHTML(s.ip)}</p>
-                    <button onclick="window.cerrarSesion(${s.id})" class="btn-eliminar">🔒 Cerrar sesión</button>
-                </div>`).join('');
-        } catch (error) {
-            contenedor.innerHTML = "<h2>🖥️ Sesiones activas</h2><p>Error al cargar</p>";
-        }
-    }
-    
-    async function cargarUsuarios() {
-        const contenedor = document.getElementById("usuarios");
-        if (!contenedor) return;
-        try {
-            const data = await API.request("/api/usuarios/todos");
-            if (!data || data.length === 0) {
-                contenedor.innerHTML = "<h2>👥 Usuarios registrados</h2><p>No hay usuarios</p>";
-                return;
-            }
-            contenedor.innerHTML = `<h2>👥 Usuarios registrados (${data.length})</h2>` + 
-                data.map(u => `<div class="card-admin-user">
-                    <p><strong>${escaparHTML(u.nombre)}</strong> (${escaparHTML(u.email)})</p>
-                    <p><strong>Rol:</strong> ${escaparHTML(u.rol)} | <strong>Estado:</strong> ${u.activo ? '✅ Activo' : '❌ Bloqueado'}</p>
-                    <button onclick="window.bloquearUsuario(${u.id})" class="btn-eliminar">🔒 Bloquear</button>
-                </div>`).join('');
-        } catch (error) {
-            contenedor.innerHTML = "<h2>👥 Usuarios registrados</h2><p>Error al cargar</p>";
-        }
-    }
-    
-    async function cargarAdopciones() {
-        const contenedor = document.getElementById("adopciones");
-        if (!contenedor) return;
-        try {
-            const data = await API.request("/api/adopciones");
-            if (!data || data.length === 0) {
-                contenedor.innerHTML = "<h2>🐾 Solicitudes de adopción</h2><p>No hay solicitudes</p>";
-                return;
-            }
-            contenedor.innerHTML = `<h2>🐾 Solicitudes de adopción (${data.length})</h2>` + 
-                data.map(a => `<div class="card-admin-adopcion">
-                    <p><strong>${escaparHTML(a.usuario_nombre)}</strong> quiere adoptar <strong>${escaparHTML(a.animal_nombre)}</strong></p>
-                    <p>📧 ${escaparHTML(a.email)} | 📱 ${escaparHTML(a.telefono)}</p>
-                    <p>Estado: <strong>${escaparHTML(a.estado)}</strong></p>
-                    ${a.estado === "pendiente" ? `<div><button onclick="window.aprobar(${a.id})" class="btn-aprobar">✅ Aprobar</button> <button onclick="window.rechazar(${a.id})" class="btn-rechazar">❌ Rechazar</button></div>` : ""}
-                </div>`).join('');
-        } catch (error) {
-            contenedor.innerHTML = "<h2>🐾 Solicitudes de adopción</h2><p>Error al cargar</p>";
-        }
-    }
-    
-    function mostrarAnimales(animales) {
-        if (!lista) return;
-        lista.innerHTML = "";
-        if (!animales?.length) { lista.innerHTML = "<p>No hay animales registrados</p>"; return; }
-        animales.forEach(a => {
-            lista.innerHTML += `<div class="card-admin">
-                <div class="card-img"><img src="${getImagenUrl(a.imagen_url)}" onerror="this.src='${API_BASE_URL}/img/perro.png'"></div>
-                <div class="card-info">
-                    <h3>${escaparHTML(a.nombre)} <span class="tipo-badge">${escaparHTML(a.tipo)}</span></h3>
-                    <p><strong>Edad:</strong> ${escaparHTML(a.edad)} años</p>
-                    <p><strong>Raza:</strong> ${escaparHTML(a.raza)}</p>
-                    <p><strong>Estado:</strong> ${escaparHTML(a.estado)}</p>
-                    <div class="card-acciones">
-                        <button onclick="window.editarAnimal(${a.id})" class="btn-editar">✏️ Editar</button>
-                        <button onclick="window.eliminarAnimal(${a.id})" class="btn-eliminar">🗑️ Eliminar</button>
-                    </div>
-                </div>
-            </div>`;
-        });
-    }
-
-    cargarAnimales();
-    cargarSesiones();
-    cargarUsuarios();
-    cargarAdopciones();
-
-    document.getElementById("btnCerrarSesion")?.addEventListener("click", () => { localStorage.clear(); window.location.href = "login.html"; });
-
-    form?.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const id = document.getElementById("id").value;
-        const imagenFile = document.getElementById("imagen")?.files[0];
-        
-        let imagenUrl = null;
-        if (imagenFile) {
-            imagenUrl = await subirImagen(imagenFile);
-            if (!imagenUrl) { alert("Error al subir la imagen"); return; }
-        }
-
-        const animal = { 
-            tipo: tipo.value, nombre: nombre.value, edad: edad.value, 
-            raza: raza.value, comportamiento: comportamiento.value, 
-            vacunas: vacunas.value, enfermedades: enfermedades.value, 
-            descripcion: descripcion.value, estado: estado.value 
-        };
-        if (imagenUrl) animal.imagen_url = imagenUrl;
-        
-        try {
-            if (id) await API.actualizarAnimal(id, animal);
-            else await API.crearAnimal(animal);
-            alert("✅ Guardado correctamente");
-            form.reset();
-            document.getElementById("id").value = "";
-            document.getElementById("imagen").value = "";
-            cargarAnimales();
-        } catch (error) { alert("Error al guardar: " + error.message); }
-    });
-
-    if (buscador) buscador.addEventListener("input", () => {
-        const texto = buscador.value.toLowerCase();
-        const filtrados = animalesGlobal.filter(a => a.nombre.toLowerCase().includes(texto) || a.raza?.toLowerCase().includes(texto));
-        mostrarAnimales(filtrados);
-    });
-
-    document.getElementById("btnFiltrar")?.addEventListener("click", () => {
-        let filtrados = animalesGlobal;
-        if (filtroTipo?.value) filtrados = filtrados.filter(a => a.tipo === filtroTipo.value);
-        if (filtroEstado?.value) filtrados = filtrados.filter(a => a.estado === filtroEstado.value);
-        mostrarAnimales(filtrados);
-    });
+// ===============================
+// GENERAR CAPTCHA
+// ===============================
+function generarCaptcha() {
+    const num1 = Math.floor(Math.random() * 10) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    document.getElementById("captchaNum1").textContent = num1;
+    document.getElementById("captchaNum2").textContent = num2;
+    document.getElementById("captchaResultado").value = num1 + num2;
 }
 
-window.editarAnimal = function(id) { window.location.href = `editar.html?id=${id}`; };
+// ===============================
+// VALIDAR CAPTCHA
+// ===============================
+function validarCaptcha() {
+    const input = document.getElementById("captchaInput").value;
+    const resultado = document.getElementById("captchaResultado").value;
+    if (parseInt(input) !== parseInt(resultado)) {
+        mostrarNotificacion("❌ Captcha incorrecto", "error");
+        generarCaptcha();
+        document.getElementById("captchaInput").value = "";
+        return false;
+    }
+    return true;
+}
 
-window.eliminarAnimal = async function(id) { 
-    if (confirm("¿Eliminar este animal?")) { 
-        await API.request(`/admin/animales/${id}`, { method: "DELETE" }); 
-        location.reload(); 
-    } 
-};
+// ===============================
+// MOSTRAR NOTIFICACIÓN
+// ===============================
+function mostrarNotificacion(mensaje, tipo) {
+    const notif = document.createElement("div");
+    notif.className = `notificacion ${tipo}`;
+    notif.innerHTML = `<span>${tipo === "exito" ? "✅" : "❌"} ${mensaje}</span>`;
+    document.body.appendChild(notif);
+    
+    setTimeout(() => {
+        notif.style.animation = "slideOut 0.3s ease";
+        setTimeout(() => notif.remove(), 300);
+    }, 4000);
+}
 
-window.bloquearUsuario = async function(id) { 
-    if (confirm("¿Bloquear este usuario?")) { 
-        await API.request(`/api/usuarios/bloquear/${id}`, { method: "PUT" }); 
-        location.reload(); 
-    } 
-};
+// ===============================
+// PASO 1: ENVIAR CREDENCIALES
+// ===============================
+async function enviarCredenciales() {
+    if (!validarCaptcha()) return;
+    
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    
+    if (!email || !password) {
+        mostrarNotificacion("Completa todos los campos", "error");
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/usuarios/login/enviar-codigo`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) throw new Error(data.mensaje || data.error);
+        
+        userIdGlobal = data.userId;
+        
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("codigoSection").style.display = "block";
+        document.getElementById("userEmail").textContent = email;
+        
+        iniciarTemporizador(600);
+        mostrarNotificacion("📧 Código enviado a tu correo", "exito");
+        
+    } catch (error) {
+        mostrarNotificacion(error.message, "error");
+    }
+}
 
-window.cerrarSesion = async function(id) { 
-    if (confirm("¿Cerrar esta sesión?")) { 
-        await API.request(`/api/sessions/${id}`, { method: "DELETE" }); 
-        location.reload(); 
-    } 
-};
+// ===============================
+// PASO 2: VERIFICAR CÓDIGO
+// ===============================
+async function verificarCodigo() {
+    const codigo = document.getElementById("codigo").value.trim();
+    
+    if (!codigo || codigo.length !== 6) {
+        mostrarNotificacion("Ingresa el código de 6 dígitos", "error");
+        return;
+    }
+    
+    if (!userIdGlobal) {
+        mostrarNotificacion("Error: Identificación no encontrada", "error");
+        volverALogin();
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/usuarios/login/verificar-codigo`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: userIdGlobal, codigo })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) throw new Error(data.error);
+        
+        // ✅ GUARDAR TOKEN Y SESIÓN
+        localStorage.setItem("accessToken", data.accessToken);
+        if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+        if (data.usuario) localStorage.setItem("usuario", JSON.stringify(data.usuario));
+        
+        mostrarNotificacion("✅ ¡Bienvenido " + (data.usuario?.nombre || "") + "!", "exito");
+        
+        // ✅ REDIRECCIÓN SEGÚN ROL
+        setTimeout(() => {
+            const rol = data.usuario?.rol || "";
+            if (rol === "admin" || rol === "superadmin") {
+                window.location.href = "/admin.html";
+            } else {
+                window.location.href = "/";
+            }
+        }, 1500);
+        
+    } catch (error) {
+        mostrarNotificacion(error.message, "error");
+    }
+}
 
-window.aprobar = async function(id) { 
-    await API.aprobarAdopcion(id); 
-    alert("✅ Adopción aprobada"); 
-    location.reload(); 
-};
+// ===============================
+// REENVIAR CÓDIGO
+// ===============================
+async function reenviarCodigo() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/usuarios/login/enviar-codigo`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) throw new Error(data.mensaje);
+        
+        userIdGlobal = data.userId;
+        
+        if (intervaloReloj) clearInterval(intervaloReloj);
+        iniciarTemporizador(600);
+        mostrarNotificacion("📧 Código reenviado", "exito");
+        
+    } catch (error) {
+        mostrarNotificacion(error.message, "error");
+    }
+}
 
-window.rechazar = async function(id) { 
-    await API.rechazarAdopcion(id); 
-    alert("❌ Adopción rechazada"); 
-    location.reload(); 
-};
+// ===============================
+// TEMPORIZADOR
+// ===============================
+function iniciarTemporizador(segundos) {
+    tiempoRestante = segundos;
+    actualizarTimer();
+    
+    if (intervaloReloj) clearInterval(intervaloReloj);
+    
+    intervaloReloj = setInterval(() => {
+        if (tiempoRestante <= 0) {
+            clearInterval(intervaloReloj);
+            document.getElementById("reenviarCodigo").disabled = false;
+            document.getElementById("timer").textContent = "Código expirado";
+        } else {
+            tiempoRestante--;
+            actualizarTimer();
+        }
+    }, 1000);
+}
+
+function actualizarTimer() {
+    const minutos = Math.floor(tiempoRestante / 60);
+    const segundos = tiempoRestante % 60;
+    document.getElementById("timer").textContent = `${minutos}:${segundos.toString().padStart(2, "0")}`;
+}
+
+// ===============================
+// VOLVER AL LOGIN
+// ===============================
+function volverALogin() {
+    if (intervaloReloj) clearInterval(intervaloReloj);
+    userIdGlobal = null;
+    
+    document.getElementById("codigoSection").style.display = "none";
+    document.getElementById("loginSection").style.display = "block";
+    document.getElementById("codigo").value = "";
+    generarCaptcha();
+}
