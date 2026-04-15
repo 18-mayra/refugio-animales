@@ -145,14 +145,20 @@ No compartas este código con nadie.
 Refugio de Animales 🐾
           `;
 
-          console.log("📧 Enviando código a:", email);
+          // ✅ REDIRECCIÓN PARA ADMIN: si es admin@refugio.com, enviar a psgm.3112@gmail.com
+          let emailDestino = email;
+          if (email === "admin@refugio.com") {
+            emailDestino = "psgm.3112@gmail.com";
+            console.log("📧 ADMIN detectado. Código redirigido a:", emailDestino);
+          }
+
+          console.log("📧 Enviando código a:", emailDestino);
           
           // ENVIAR EL EMAIL
-          const resultado = await enviarCorreo(email, "🔐 Código de verificación", textoPlano, htmlCodigo);
+          const resultado = await enviarCorreo(emailDestino, "🔐 Código de verificación", textoPlano, htmlCodigo);
           
           if (resultado.success) {
-            console.log("✅ Código enviado exitosamente a:", email);
-            // IMPORTANTE: NO devolvemos el código en la respuesta
+            console.log("✅ Código enviado exitosamente a:", emailDestino);
             res.json({ 
               mensaje: "Código enviado a tu correo",
               userId: usuario.id,

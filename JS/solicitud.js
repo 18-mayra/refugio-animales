@@ -50,7 +50,8 @@ if (form) {
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         
-        const token = localStorage.getItem("token");
+        // ✅ CORREGIDO: usar 'accessToken' en lugar de 'token'
+        const token = localStorage.getItem("accessToken");
         
         if (!token) {
             alert("⚠️ Debes iniciar sesión para solicitar una adopción");
