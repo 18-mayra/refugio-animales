@@ -1,10 +1,24 @@
 // solicitud.js - Formulario de solicitud de adopción
 
 const API_URL = window.location.origin;
+let csrfToken = "";
+
+// Obtener CSRF token
+async function obtenerCSRF() {
+    try {
+        const res = await fetch(`${API_URL}/api/csrf-token`, {
+            credentials: "include"
+        });
+        const data = await res.json();
+        csrfToken = data.csrfToken;
+        console.log("✅ CSRF Token obtenido");
+    } catch (error) {
+        console.error("Error CSRF:", error);
+    }
+}
 
 // Obtener datos del animal desde localStorage
 const animalId = localStorage.getItem("adopcion_animal_id");
-const animalNombre = localStorage.getItem("adopcion_animal_nombre");
 
 // Mostrar información del animal
 async function cargarInfoAnimal() {
@@ -24,9 +38,7 @@ async function cargarInfoAnimal() {
     
     try {
         const res = await fetch(`${API_URL}/animales/${animalId}`);
-        
         if (!res.ok) throw new Error("Animal no encontrado");
-        
         const animal = await res.json();
         
         detalleDiv.innerHTML = `
@@ -50,10 +62,10 @@ if (form) {
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         
-        // ✅ CORREGIDO: usar 'accessToken' (no 'token')
         const token = localStorage.getItem("accessToken");
         
         console.log("🔍 Token encontrado:", token ? "SÍ" : "NO");
+        console.log("🔍 CSRF Token:", csrfToken ? "SÍ" : "NO");
         
         if (!token) {
             alert("⚠️ Debes iniciar sesión para solicitar una adopción");
@@ -89,9 +101,11 @@ if (form) {
         try {
             const res = await fetch(`${API_URL}/api/adopciones`, {
                 method: "POST",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
+                    "Authorization": "Bearer " + token,
+                    "CSRF-Token": csrfToken
                 },
                 body: JSON.stringify(datos)
             });
@@ -125,11 +139,11 @@ if (form) {
     });
 }
 
-// Cargar información del animal al iniciar
-document.addEventListener("DOMContentLoaded", () => {
-    cargarInfoAnimal();
+// Inicializar: obtener CSRF y cargar animal
+document.addEventListener("DOMContentLoaded", async () => {
+    await obtenerCSRF();
+    await cargarInfoAnimal();
     
-    // Verificar sesión al cargar la página
     const token = localStorage.getItem("accessToken");
     if (!token) {
         console.log("⚠️ No hay sesión activa");
