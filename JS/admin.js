@@ -391,9 +391,23 @@ window.eliminarAnimal = async function(id) {
     try {
         const res = await fetch(`${API_BASE_URL}/admin/animales/${id}`, { 
             method: "DELETE",
-            headers: { "Authorization": `Bearer ${token}` }
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
         });
-        if (!res.ok) throw new Error("Error al eliminar");
+        
+        if (res.status === 401 || res.status === 403) {
+            alert("Sesión expirada o no autorizado. Inicia sesión nuevamente.");
+            cerrarSesionAdmin();
+            return;
+        }
+        
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.error || "Error al eliminar");
+        }
+        
         alert("✅ Animal eliminado");
         location.reload();
     } catch (error) {

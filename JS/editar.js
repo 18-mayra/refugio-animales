@@ -1,6 +1,6 @@
-// editar.js - Editar animal con imagen (CORREGIDO)
+// editar.js - Editar animal con imagen (CORREGIDO PARA RENDER)
 
-const API_URL = "http://localhost:3000";
+const API_BASE_URL = window.location.origin;  // ✅ Usar URL dinámica (funciona en local y producción)
 
 let csrfToken = "";
 let imagenUrlActual = "";
@@ -10,7 +10,7 @@ let imagenUrlActual = "";
 // ===============================
 async function obtenerCSRF() {
     try {
-        const res = await fetch(`${API_URL}/api/csrf-token`, {
+        const res = await fetch(`${API_BASE_URL}/api/csrf-token`, {
             credentials: "include"
         });
         const data = await res.json();
@@ -31,10 +31,13 @@ async function subirImagen(file) {
     formData.append('imagen', file);
 
     try {
-        // ✅ CORREGIDO
         const token = localStorage.getItem("accessToken");
+        if (!token) {
+            alert("No hay sesión activa");
+            return null;
+        }
 
-        const res = await fetch(`${API_URL}/api/admin/upload`, {
+        const res = await fetch(`${API_BASE_URL}/api/admin/upload`, {
             method: "POST",
             headers: {
                 "Authorization": "Bearer " + token,
@@ -43,12 +46,14 @@ async function subirImagen(file) {
             body: formData
         });
 
-        const data = await res.json();
-
-        if (!res.ok) {
-            throw new Error(data.error || "Error al subir imagen");
+        if (res.status === 401 || res.status === 403) {
+            alert("Sesión expirada. Inicia sesión nuevamente.");
+            window.location.href = "/login.html";
+            return null;
         }
 
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Error al subir imagen");
         return data.url;
 
     } catch (error) {
@@ -75,7 +80,9 @@ async function cargarAnimal() {
     }
 
     try {
-        const res = await fetch(`${API_URL}/animales/${animalId}`);
+        const res = await fetch(`${API_BASE_URL}/animales/${animalId}`);
+        if (!res.ok) throw new Error("Animal no encontrado");
+        
         const animal = await res.json();
 
         imagenUrlActual = animal.imagen_url || "";
@@ -92,14 +99,17 @@ async function cargarAnimal() {
         document.getElementById("estado").value = animal.estado || "Disponible";
 
         const imgPreview = document.getElementById("imgPreview");
-
-        if (imagenUrlActual) {
-            imgPreview.src = imagenUrlActual.startsWith("http")
-                ? imagenUrlActual
-                : `${API_URL}${imagenUrlActual}`;
-        } else {
-            imgPreview.src = "https://via.placeholder.com/200x200?text=Sin+Imagen";
+        if (imgPreview) {
+            if (imagenUrlActual) {
+                imgPreview.src = imagenUrlActual.startsWith("http")
+                    ? imagenUrlActual
+                    : `${API_BASE_URL}${imagenUrlActual}`;
+            } else {
+                imgPreview.src = `${API_BASE_URL}/img/perro.png`;
+            }
         }
+
+        console.log("✅ Animal cargado:", animal.nombre);
 
     } catch (error) {
         console.error(error);
@@ -113,9 +123,7 @@ async function cargarAnimal() {
 async function guardarCambios(e) {
     e.preventDefault();
 
-    // ✅ CORREGIDO
     const token = localStorage.getItem("accessToken");
-
     if (!token) {
         alert("Debes iniciar sesión");
         window.location.href = "login.html";
@@ -147,7 +155,7 @@ async function guardarCambios(e) {
     }
 
     try {
-        const res = await fetch(`${API_URL}/admin/animales/${animalId}`, {
+        const res = await fetch(`${API_BASE_URL}/admin/animales/${animalId}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -157,9 +165,14 @@ async function guardarCambios(e) {
             body: JSON.stringify(datos)
         });
 
-        const data = await res.json();
+        if (res.status === 401 || res.status === 403) {
+            alert("Sesión expirada. Inicia sesión nuevamente.");
+            window.location.href = "/login.html";
+            return;
+        }
 
-        if (!res.ok) throw new Error(data.error);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Error al actualizar");
 
         alert("✅ Actualizado correctamente");
         window.location.href = "admin.html";
@@ -176,22 +189,22 @@ function setupImagePreview() {
     const input = document.getElementById("imagen");
     const preview = document.getElementById("imgPreview");
 
-    input.addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    if (input && preview) {
+        input.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = e => preview.src = e.target.result;
-        reader.readAsDataURL(file);
-    });
+            const reader = new FileReader();
+            reader.onload = e => preview.src = e.target.result;
+            reader.readAsDataURL(file);
+        });
+    }
 }
 
 // ===============================
 // 🚀 INICIALIZAR
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-
-    // ✅ CORREGIDO
     const token = localStorage.getItem("accessToken");
     const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
 
@@ -209,7 +222,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     await obtenerCSRF();
     setupImagePreview();
-    cargarAnimal();
+    await cargarAnimal();
 });
 
 const form = document.getElementById("formEditar");
