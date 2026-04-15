@@ -26,20 +26,22 @@ async function obtenerCSRF() {
 }
 
 // ===============================
-// ✅ VERIFICAR TOKEN
+// 🖼️ OBTENER URL CORRECTA DE IMAGEN
 // ===============================
-async function verificarToken() {
-    const token = localStorage.getItem("accessToken");
-    if (!token) return false;
-    
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/usuarios/token/validar`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        return res.ok;
-    } catch {
-        return false;
+function getImagenUrl(imagenUrl) {
+    if (!imagenUrl || imagenUrl === '/img/default.png') {
+        return `${API_BASE_URL}/img/perro.png`;
     }
+    if (imagenUrl.startsWith('/uploads/')) {
+        return `${API_BASE_URL}${imagenUrl}`;
+    }
+    if (imagenUrl.startsWith('img/')) {
+        return `${API_BASE_URL}/${imagenUrl}`;
+    }
+    if (imagenUrl.startsWith('http')) {
+        return imagenUrl;
+    }
+    return `${API_BASE_URL}/img/perro.png`;
 }
 
 // ===============================
@@ -55,7 +57,7 @@ async function cargarAnimales() {
     } catch (error) { 
         console.error("Error cargando animales:", error);
         const lista = document.getElementById("listaAnimales");
-        if (lista) lista.innerHTML = "<p>Error al cargar animales</p>";
+        if (lista) lista.innerHTML = "<p class='error-message'>Error al cargar animales</p>";
     } 
 }
 
@@ -83,7 +85,7 @@ async function cargarSesiones() {
         });
         
         if (res.status === 401 || res.status === 403) {
-            contenedor.innerHTML = "<p>Sesión expirada. <a href='login.html'>Inicia sesión nuevamente</a></p>";
+            contenedor.innerHTML = "<p class='error-message'>Sesión expirada. <a href='login.html'>Inicia sesión nuevamente</a></p>";
             return;
         }
         
@@ -103,7 +105,7 @@ async function cargarSesiones() {
         `).join('');
     } catch (error) {
         console.error(error);
-        contenedor.innerHTML = "<p>Error al cargar sesiones</p>";
+        contenedor.innerHTML = "<p class='error-message'>Error al cargar sesiones</p>";
     }
 }
 
@@ -131,7 +133,7 @@ async function cargarUsuarios() {
         });
         
         if (res.status === 401 || res.status === 403) {
-            contenedor.innerHTML = "<p>Sesión expirada. <a href='login.html'>Inicia sesión nuevamente</a></p>";
+            contenedor.innerHTML = "<p class='error-message'>Sesión expirada. <a href='login.html'>Inicia sesión nuevamente</a></p>";
             return;
         }
         
@@ -151,7 +153,7 @@ async function cargarUsuarios() {
         `).join('');
     } catch (error) {
         console.error(error);
-        contenedor.innerHTML = "<p>Error al cargar usuarios</p>";
+        contenedor.innerHTML = "<p class='error-message'>Error al cargar usuarios</p>";
     }
 }
 
@@ -179,7 +181,7 @@ async function cargarAdopciones() {
         });
         
         if (res.status === 401 || res.status === 403) {
-            contenedor.innerHTML = "<p>Sesión expirada. <a href='login.html'>Inicia sesión nuevamente</a></p>";
+            contenedor.innerHTML = "<p class='error-message'>Sesión expirada. <a href='login.html'>Inicia sesión nuevamente</a></p>";
             return;
         }
         
@@ -205,7 +207,7 @@ async function cargarAdopciones() {
         `).join('');
     } catch (error) {
         console.error(error);
-        contenedor.innerHTML = "<p>Error al cargar solicitudes</p>";
+        contenedor.innerHTML = "<p class='error-message'>Error al cargar solicitudes</p>";
     }
 }
 
@@ -222,7 +224,7 @@ function mostrarAnimales(animales) {
     }
     animales.forEach(a => {
         lista.innerHTML += `<div class="card-admin" data-id="${a.id}">
-            <div class="card-img"><img src="${a.imagen_url || '/img/perro.png'}" onerror="this.src='${API_BASE_URL}/img/perro.png'"></div>
+            <div class="card-img"><img src="${getImagenUrl(a.imagen_url)}" onerror="this.src='${API_BASE_URL}/img/perro.png'"></div>
             <div class="card-info">
                 <h3>${escaparHTML(a.nombre)} <span class="tipo-badge">${escaparHTML(a.tipo)}</span></h3>
                 <p><strong>Edad:</strong> ${escaparHTML(a.edad)} años</p>
@@ -300,17 +302,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         alert("Acceso solo para administradores");
         window.location.href = "/index.html";
         return;
-    }
-    
-    // Mostrar nombre del admin
-    const authLink = document.getElementById("authLink");
-    if (authLink && usuario.nombre) {
-        authLink.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span>🐾 Hola, ${usuario.nombre}</span>
-                <button onclick="cerrarSesionAdmin()" class="btn-cerrar-sesion" style="background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Salir</button>
-            </div>
-        `;
     }
     
     // Cargar datos

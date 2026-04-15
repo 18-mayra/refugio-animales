@@ -2,11 +2,13 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Administrador - Refugio</title>
   <link rel="stylesheet" href="CSS/styles.css">
   <link rel="stylesheet" href="CSS/base.css">
   <link rel="stylesheet" href="CSS/animations.css">
   <style>
+    /* Estilos adicionales para el admin */
     .menu-links .login { margin-left: auto; }
     .btn-cerrar-sesion {
       background: none;
@@ -17,14 +19,59 @@
       cursor: pointer;
     }
     .btn-cerrar-sesion:hover { background: rgba(255,255,255,0.2); }
+    
+    /* Estilos para mensajes de error */
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 10px 0;
+      text-align: center;
+    }
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 10px 0;
+      text-align: center;
+    }
   </style>
 </head>
 <body class="admin-page">
 
+<!-- 🔐 VERIFICACIÓN DE SESIÓN AL INICIO -->
+<script>
+  (function() {
+    const token = localStorage.getItem("accessToken");
+    const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+    
+    console.log("🔍 Verificando admin - Token:", token ? "SÍ" : "NO");
+    console.log("🔍 Usuario:", usuario);
+    console.log("🔍 Rol:", usuario.rol);
+    
+    if (!token) {
+      alert("Debes iniciar sesión");
+      window.location.href = "/login.html";
+      return;
+    }
+    
+    if (usuario.rol !== "admin" && usuario.rol !== "superadmin") {
+      alert("Acceso solo para administradores");
+      window.location.href = "/index.html";
+      return;
+    }
+    
+    console.log("✅ Admin autorizado");
+  })();
+</script>
+
 <header>
   <nav class="menu" aria-label="Menú principal">
     <div class="logo">🐾 Refugio Admin</div>
-    <ul class="menu-links">
+    <button class="menu-toggle" id="menuToggle">☰</button>
+    <ul class="menu-links" id="menuLinks">
       <li><a href="index.html">Inicio</a></li>
       <li><a href="admin.html" class="active">Panel Admin</a></li>
       <li class="login" id="authLink"></li>
@@ -39,35 +86,73 @@
 <button id="btnCerrarSesion">🚪 Cerrar sesión</button>
 <hr>
 
+<!-- FORMULARIO PARA AGREGAR/EDITAR ANIMAL -->
 <form id="formAnimal" enctype="multipart/form-data">
   <input type="hidden" id="id">
+  
   <label>Tipo:</label>
-  <select id="tipo"><option value="Perro">Perro</option><option value="Gato">Gato</option></select><br><br>
-  <label>Nombre:</label><input type="text" id="nombre" required><br><br>
-  <label>Edad:</label><input type="number" id="edad"><br><br>
-  <label>Raza:</label><input type="text" id="raza"><br><br>
-  <label>Comportamiento:</label><input type="text" id="comportamiento"><br><br>
-  <label>Vacunas:</label><input type="text" id="vacunas"><br><br>
-  <label>Enfermedades:</label><input type="text" id="enfermedades"><br><br>
-  <label>Descripción:</label><textarea id="descripcion"></textarea><br><br>
+  <select id="tipo">
+    <option value="Perro">Perro</option>
+    <option value="Gato">Gato</option>
+  </select><br><br>
+
+  <label>Nombre:</label>
+  <input type="text" id="nombre" required><br><br>
+
+  <label>Edad:</label>
+  <input type="number" id="edad"><br><br>
+
+  <label>Raza:</label>
+  <input type="text" id="raza"><br><br>
+
+  <label>Comportamiento:</label>
+  <input type="text" id="comportamiento"><br><br>
+
+  <label>Vacunas:</label>
+  <input type="text" id="vacunas"><br><br>
+
+  <label>Enfermedades:</label>
+  <input type="text" id="enfermedades"><br><br>
+
+  <label>Descripción:</label><br>
+  <textarea id="descripcion" rows="4"></textarea><br><br>
+
   <label>Estado:</label>
-  <select id="estado"><option value="Disponible">Disponible</option><option value="Adoptado">Adoptado</option></select><br><br>
+  <select id="estado">
+    <option value="Disponible">Disponible</option>
+    <option value="Adoptado">Adoptado</option>
+  </select><br><br>
+
   <div class="form-group">
     <label>📸 Imagen del animal:</label>
     <input type="file" id="imagen" accept="image/*">
     <small>Formatos: JPG, PNG, GIF (máx 5MB)</small>
   </div>
+
   <button type="submit">💾 Guardar</button>
 </form>
 
 <hr>
+
 <h2>🔎 Buscar y Filtrar</h2>
 <input type="text" id="buscador" placeholder="Buscar por nombre o raza">
-<select id="filtroTipo"><option value="">Todos los tipos</option><option value="Perro">Perros</option><option value="Gato">Gatos</option></select>
-<select id="filtroEstado"><option value="">Todos los estados</option><option value="Disponible">Disponibles</option><option value="Adoptado">Adoptados</option></select>
+
+<select id="filtroTipo">
+  <option value="">Todos los tipos</option>
+  <option value="Perro">Perros</option>
+  <option value="Gato">Gatos</option>
+</select>
+
+<select id="filtroEstado">
+  <option value="">Todos los estados</option>
+  <option value="Disponible">Disponibles</option>
+  <option value="Adoptado">Adoptados</option>
+</select>
+
 <button id="btnFiltrar">🔍 Filtrar</button>
 
 <hr>
+
 <h2>📋 Listado de Animales</h2>
 <div id="listaAnimales"></div>
 
@@ -86,32 +171,25 @@
 <script src="JS/api.js"></script>
 <script src="JS/auth.js"></script>
 <script src="JS/admin.js"></script>
+<script src="JS/menu.js"></script>
 
 <script>
-  (function() {
-    const token = localStorage.getItem("accessToken");
-    const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
-    
-    console.log("🔍 Verificando admin");
-    
-    if (!token) {
-      window.location.href = "/login.html";
-      return;
-    }
-    
-    if (usuario.rol !== "admin" && usuario.rol !== "superadmin") {
-      window.location.href = "/index.html";
-      return;
-    }
-    
-    const authLink = document.getElementById("authLink");
-    if (authLink && usuario.nombre) {
-      authLink.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><span>🐾 Hola, ${usuario.nombre}</span><button onclick="cerrarSesionAdmin()" class="btn-cerrar-sesion">Salir</button></div>`;
-    }
-  })();
+  // Mostrar nombre del admin en el navbar
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+  const authLink = document.getElementById("authLink");
+  if (authLink && usuario.nombre) {
+    authLink.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span>🐾 Hola, ${usuario.nombre}</span>
+        <button onclick="cerrarSesionAdmin()" class="btn-cerrar-sesion">Salir</button>
+      </div>
+    `;
+  }
   
   function cerrarSesionAdmin() {
-    localStorage.clear();
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("usuario");
     window.location.href = "/login.html";
   }
 </script>
