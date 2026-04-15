@@ -20,8 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Configurar elementos del DOM
     configurarElementos();
     
-    // Cargar temas guardados
-    cargarTema();
+    // Generar CAPTCHA
+    generarCaptcha();
 });
 
 // ===============================
@@ -46,16 +46,61 @@ function configurarElementos() {
         reenviarBtn.addEventListener("click", reenviarCodigo);
     }
     
+    // Botón volver al login
+    const volverBtn = document.getElementById("volverLoginBtn");
+    if (volverBtn) {
+        volverBtn.addEventListener("click", volverALogin);
+    }
+    
     // Mostrar/ocultar contraseña
-    const togglePassword = document.getElementById("togglePassword");
-    if (togglePassword) {
-        togglePassword.addEventListener("click", () => {
+    const togglePasswordBtn = document.getElementById("togglePasswordBtn");
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener("click", () => {
             const passwordInput = document.getElementById("password");
             const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
             passwordInput.setAttribute("type", type);
-            togglePassword.textContent = type === "password" ? "👁️" : "🙈";
+            togglePasswordBtn.textContent = type === "password" ? "👁️" : "🙈";
         });
     }
+}
+
+// ===============================
+// GENERAR CAPTCHA ALEATORIO
+// ===============================
+function generarCaptcha() {
+    const num1 = Math.floor(Math.random() * 10) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    const resultado = num1 + num2;
+    
+    const captchaNum1 = document.getElementById("captchaNum1");
+    const captchaNum2 = document.getElementById("captchaNum2");
+    const captchaResultado = document.getElementById("captchaResultado");
+    
+    if (captchaNum1) captchaNum1.textContent = num1;
+    if (captchaNum2) captchaNum2.textContent = num2;
+    if (captchaResultado) captchaResultado.value = resultado;
+}
+
+// ===============================
+// VALIDAR CAPTCHA
+// ===============================
+function validarCaptcha() {
+    const captchaInput = document.getElementById("captchaInput");
+    const captchaResultado = document.getElementById("captchaResultado");
+    
+    if (!captchaInput || !captchaResultado) {
+        mostrarNotificacion("Error con el captcha. Recarga la página.", "error");
+        return false;
+    }
+    
+    if (parseInt(captchaInput.value) !== parseInt(captchaResultado.value)) {
+        mostrarNotificacion("❌ Captcha incorrecto. Intenta nuevamente.", "error");
+        generarCaptcha();
+        captchaInput.value = "";
+        return false;
+    }
+    
+    return true;
 }
 
 // ===============================
@@ -64,22 +109,8 @@ function configurarElementos() {
 async function enviarCredenciales(event) {
     event.preventDefault();
     
-    // ✅ VALIDAR CAPTCHA
-    const captchaInput = document.getElementById("captchaInput");
-    const captchaResultado = document.getElementById("captchaResultado");
-    
-    if (!captchaInput || !captchaResultado) {
-        mostrarNotificacion("Error con el captcha. Recarga la página.", "error");
-        return;
-    }
-    
-    if (parseInt(captchaInput.value) !== parseInt(captchaResultado.value)) {
-        mostrarNotificacion("❌ Captcha incorrecto. Intenta nuevamente.", "error");
-        // Regenerar captcha si existe la función
-        if (typeof generarCaptcha === "function") {
-            generarCaptcha();
-        }
-        captchaInput.value = "";
+    // Validar CAPTCHA
+    if (!validarCaptcha()) {
         return;
     }
     
@@ -133,7 +164,7 @@ async function verificarCodigo(event) {
     
     if (!userIdGlobal) {
         mostrarNotificacion("Error: Identificación de usuario no encontrada. Intenta nuevamente.", "error");
-        reiniciarLogin();
+        volverALogin();
         return;
     }
     
@@ -184,7 +215,7 @@ async function reenviarCodigo() {
     
     if (!email || !password) {
         mostrarNotificacion("Por favor, ingresa tu email y contraseña nuevamente", "error");
-        reiniciarLogin();
+        volverALogin();
         return;
     }
     
@@ -229,6 +260,37 @@ function mostrarSeccionCodigo(email) {
     const codigoInput = document.getElementById("codigo");
     if (codigoInput) codigoInput.value = "";
     codigoInput?.focus();
+}
+
+// ===============================
+// VOLVER AL LOGIN
+// ===============================
+function volverALogin() {
+    if (intervaloReloj) {
+        clearInterval(intervaloReloj);
+        intervaloReloj = null;
+    }
+    userIdGlobal = null;
+    
+    const codigoSection = document.getElementById("codigoSection");
+    if (codigoSection) codigoSection.style.display = "none";
+    
+    const loginSection = document.getElementById("loginSection");
+    if (loginSection) loginSection.style.display = "block";
+    
+    const codigoInput = document.getElementById("codigo");
+    if (codigoInput) codigoInput.value = "";
+    
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const captchaInput = document.getElementById("captchaInput");
+    
+    if (emailInput) emailInput.value = "";
+    if (passwordInput) passwordInput.value = "";
+    if (captchaInput) captchaInput.value = "";
+    
+    generarCaptcha();
+    emailInput?.focus();
 }
 
 // ===============================
@@ -286,26 +348,6 @@ function habilitarReenvio(habilitado) {
 }
 
 // ===============================
-// REINICIAR LOGIN (VOLVER AL INICIO)
-// ===============================
-function reiniciarLogin() {
-    if (intervaloReloj) clearInterval(intervaloReloj);
-    userIdGlobal = null;
-    
-    const codigoSection = document.getElementById("codigoSection");
-    if (codigoSection) codigoSection.style.display = "none";
-    
-    const loginSection = document.getElementById("loginSection");
-    if (loginSection) loginSection.style.display = "block";
-    
-    const emailInput = document.getElementById("email");
-    const passwordInput = document.getElementById("password");
-    if (emailInput) emailInput.value = "";
-    if (passwordInput) passwordInput.value = "";
-    emailInput?.focus();
-}
-
-// ===============================
 // MOSTRAR NOTIFICACIÓN
 // ===============================
 function mostrarNotificacion(mensaje, tipo = "info") {
@@ -322,12 +364,12 @@ function mostrarNotificacion(mensaje, tipo = "info") {
     notificacion.style.padding = "15px 20px";
     notificacion.style.borderRadius = "8px";
     notificacion.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
-    notificacion.style.animation = "slideIn 0.3s ease";
     
     document.body.appendChild(notificacion);
     
     setTimeout(() => {
-        notificacion.style.animation = "slideOut 0.3s ease";
+        notificacion.style.opacity = "0";
+        notificacion.style.transition = "opacity 0.3s ease";
         setTimeout(() => {
             if (notificacion && notificacion.remove) notificacion.remove();
         }, 300);
@@ -343,7 +385,7 @@ function mostrarLoading(mostrar) {
     
     if (loginBtn) {
         loginBtn.disabled = mostrar;
-        loginBtn.textContent = mostrar ? "ENVIANDO..." : "INICIAR SESIÓN";
+        loginBtn.textContent = mostrar ? "ENVIANDO..." : "Ingresar";
     }
     
     if (verificarBtn) {
@@ -351,34 +393,3 @@ function mostrarLoading(mostrar) {
         verificarBtn.textContent = mostrar ? "VERIFICANDO..." : "VERIFICAR CÓDIGO";
     }
 }
-
-// ===============================
-// CARGAR TEMA GUARDADO
-// ===============================
-function cargarTema() {
-    const tema = localStorage.getItem("tema");
-    if (tema === "dark") {
-        document.body.classList.add("dark-mode");
-    }
-}
-
-// ===============================
-// BOTÓN VOLVER
-// ===============================
-function volverALogin() {
-    reiniciarLogin();
-}
-
-// Agregar estilos de animación
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-`;
-document.head.appendChild(style);

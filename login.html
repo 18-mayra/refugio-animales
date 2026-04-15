@@ -7,8 +7,7 @@
     <link rel="stylesheet" href="CSS/styles.css">
     <link rel="stylesheet" href="CSS/base.css">
     <link rel="stylesheet" href="CSS/animations.css">
-    <style>
-    </style>
+    <link rel="stylesheet" href="CSS/login.css">
 </head>
 <body>
 
@@ -44,7 +43,7 @@
                 
                 <div class="password-container">
                     <input type="password" id="password" placeholder="Contraseña" required>
-                    <button type="button" class="toggle-password" onclick="togglePassword('password')"></button>
+                    <button type="button" class="toggle-password" id="togglePasswordBtn">👁️</button>
                 </div>
 
                 <!-- CAPTCHA ALEATORIO -->
@@ -54,8 +53,7 @@
                     <input type="hidden" id="captchaResultado" value="8">
                 </div>
 
-                <button type="submit">Ingresar</button>
-                <form id="loginForm" onsubmit="return false;"></form>
+                <button type="submit" id="loginBtn">Ingresar</button>
             </form>
 
             <p>¿No tienes cuenta? <a href="registro.html">Registrarse</a></p>
@@ -80,46 +78,11 @@
                 </div>
                 
                 <button type="button" class="btn-secondary" id="reenviarCodigo" disabled>Reenviar código</button>
-                <button type="button" class="btn-secondary" onclick="volverALogin()" style="margin-top: 10px;">Volver</button>
+                <button type="button" class="btn-secondary" id="volverLoginBtn">Volver</button>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-    function togglePassword(id) {
-        const input = document.getElementById(id);
-        const btn = input.nextElementSibling;
-        if (input.type === "password") {
-            input.type = "text";
-            btn.textContent = "";
-        } else {
-            input.type = "password";
-            btn.textContent = "";
-        }
-    }
-
-    // Generar CAPTCHA aleatorio
-    function generarCaptcha() {
-        const num1 = Math.floor(Math.random() * 10) + 1;
-        const num2 = Math.floor(Math.random() * 10) + 1;
-        const resultado = num1 + num2;
-        
-        document.getElementById("captchaNum1").textContent = num1;
-        document.getElementById("captchaNum2").textContent = num2;
-        document.getElementById("captchaResultado").value = resultado;
-    }
-
-    // Función para volver al login (debe estar disponible globalmente)
-    window.volverALogin = function() {
-        document.getElementById("codigoSection").style.display = "none";
-        document.getElementById("loginSection").style.display = "block";
-        document.getElementById("codigo").value = "";
-        generarCaptcha();
-    };
-
-    document.addEventListener("DOMContentLoaded", generarCaptcha);
-</script>
 
 <script src="JS/api.js"></script>
 <script src="JS/auth.js"></script>
