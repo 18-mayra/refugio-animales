@@ -119,11 +119,11 @@ router.post("/", auth, (req, res) => {
         return res.status(400).json({ error: "Tipo y nombre son requeridos" });
     }
     
-    // ✅ Imagen local por defecto (sin placeholder externo)
     const imagenFinal = imagen_url || "/img/perro.png";
     
+    // ✅ CORREGIDO: 'comportamiento' no 'comportamento'
     const sql = `INSERT INTO animales 
-        (tipo, nombre, edad, raza, comportamento, vacunas, enfermedades, descripcion, estado, imagen_url) 
+        (tipo, nombre, edad, raza, comportamiento, vacunas, enfermedades, descripcion, estado, imagen_url) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     
     const values = [
@@ -135,11 +135,12 @@ router.post("/", auth, (req, res) => {
     db.query(sql, values, (err, result) => {
         if (err) {
             console.error("❌ Error SQL:", err);
-            return res.status(500).json({ error: "Error al registrar animal" });
+            return res.status(500).json({ error: "Error al registrar animal: " + err.message });
         }
         res.json({ ok: true, id: result.insertId, mensaje: "Animal registrado correctamente" });
     });
 });
+
 
 /* ======================
    EDITAR (SOLO ADMIN)
