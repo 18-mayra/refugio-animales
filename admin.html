@@ -6,13 +6,29 @@
   <link rel="stylesheet" href="CSS/styles.css">
   <link rel="stylesheet" href="CSS/base.css">
   <link rel="stylesheet" href="CSS/animations.css">
+  <style>
+    /* Estilos adicionales para el admin */
+    .menu-links .login {
+      margin-left: auto;
+    }
+    .btn-cerrar-sesion {
+      background: none;
+      border: 1px solid white;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn-cerrar-sesion:hover {
+      background: rgba(255,255,255,0.2);
+    }
+  </style>
 </head>
 <body class="admin-page">
 
 <header>
   <nav class="menu" aria-label="Menú principal">
     <div class="logo">🐾 Refugio Admin</div>
-    <button class="menu-toggle" id="menuToggle">☰</button>
     <ul class="menu-links" id="menuLinks">
       <li><a href="index.html">Inicio</a></li>
       <li><a href="admin.html" class="active">Panel Admin</a></li>
@@ -26,7 +42,6 @@
 
 <h1>🐾 Panel de Administración</h1>
 
-<button id="btnCerrarSesion">Cerrar sesión</button>
 <hr>
 
 <form id="formAnimal" enctype="multipart/form-data">
@@ -95,13 +110,13 @@
 
 <hr>
 
-<h2>Listado de Animales</h2>
+<h2>📋 Listado de Animales</h2>
 <div id="listaAnimales"></div>
 
-<h2>Gestión de Usuarios</h2>
+<h2>👥 Gestión de Usuarios</h2>
 <div id="usuarios"></div>
 
-<h2>Sesiones activas</h2>
+<h2>🖥️ Sesiones activas</h2>
 <div id="sesiones"></div>
 
 <h2>🐾 Solicitudes de Adopción</h2>
@@ -113,11 +128,10 @@
 <script src="JS/api.js"></script>
 <script src="JS/auth.js"></script>
 <script src="JS/admin.js"></script>
-<script src="JS/menu.js"></script>
 
-<!-- 🔥 SCRIPTS DE SEGURIDAD AL FINAL DEL BODY -->
+<!-- 🔥 Script de verificación y cierre de sesión -->
 <script>
-  // Verificar sesión de admin después de que todo esté cargado
+  // Verificar sesión de admin
   (function() {
     const token = localStorage.getItem("accessToken");
     const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
@@ -144,13 +158,13 @@
       authLink.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
           <span>🐾 Hola, ${usuario.nombre}</span>
-          <button onclick="cerrarSesion()" style="background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Salir</button>
+          <button onclick="cerrarSesionAdmin()" class="btn-cerrar-sesion">Salir</button>
         </div>
       `;
     }
   })();
   
-  function cerrarSesion() {
+  function cerrarSesionAdmin() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("usuario");
