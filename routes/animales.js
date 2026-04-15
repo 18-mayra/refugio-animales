@@ -4,6 +4,7 @@ const db = require("../db");
 
 // 🔐 MIDDLEWARES
 const auth = require("../middlewares/authMiddleware");
+const role = require("../middlewares/roleMiddleware");
 
 /* ======================
    OBTENER TODOS (PÚBLICO)
@@ -106,18 +107,17 @@ router.get("/:id", (req, res) => {
 });
 
 /* ======================
-   AGREGAR (ADMIN)
+   AGREGAR (SOLO ADMIN)
 ====================== */
-router.post("/", auth, (req, res) => {
+router.post("/", auth, role("admin"), (req, res) => {
     const { tipo, nombre, edad, raza, comportamiento, vacunas, enfermedades, descripcion, estado, imagen_url } = req.body;
     
-    console.log("📝 Creando animal:", { tipo, nombre, edad, raza });
+    console.log("📝 Creando animal por admin:", req.usuario?.nombre);
     
     if (!tipo || !nombre) {
         return res.status(400).json({ error: "Tipo y nombre son requeridos" });
     }
     
-    // ✅ USAR PLACEHOLDER DE INTERNET si no hay imagen
     const imagenFinal = imagen_url || "https://via.placeholder.com/300x200?text=Sin+Imagen";
     
     const sql = `INSERT INTO animales 
@@ -147,14 +147,16 @@ router.post("/", auth, (req, res) => {
 });
 
 /* ======================
-   EDITAR (ADMIN)
+   EDITAR (SOLO ADMIN)
 ====================== */
-router.put("/:id", auth, (req, res) => {
+router.put("/:id", auth, role("admin"), (req, res) => {
     const id = parseInt(req.params.id);
     
     if (isNaN(id)) {
         return res.status(400).json({ error: "ID inválido" });
     }
+    
+    console.log("✏️ Editando animal por admin:", req.usuario?.nombre);
     
     db.query("SELECT id FROM animales WHERE id = ?", [id], (err, rows) => {
         if (err || rows.length === 0) {
@@ -172,14 +174,16 @@ router.put("/:id", auth, (req, res) => {
 });
 
 /* ======================
-   ELIMINAR (ADMIN)
+   ELIMINAR (SOLO ADMIN)
 ====================== */
-router.delete("/:id", auth, (req, res) => {
+router.delete("/:id", auth, role("admin"), (req, res) => {
     const id = parseInt(req.params.id);
     
     if (isNaN(id)) {
         return res.status(400).json({ error: "ID inválido" });
     }
+    
+    console.log("🗑️ Eliminando animal por admin:", req.usuario?.nombre);
     
     db.query("SELECT id FROM animales WHERE id = ?", [id], (err, rows) => {
         if (err || rows.length === 0) {
@@ -197,7 +201,7 @@ router.delete("/:id", auth, (req, res) => {
 });
 
 /* ======================
-   GALERÍA
+   GALERÍA (PÚBLICO)
 ====================== */
 router.get("/galeria", (req, res) => {
     const { tipo, estado } = req.query;
@@ -227,7 +231,7 @@ router.get("/galeria", (req, res) => {
 });
 
 /* ======================
-   ESTADÍSTICAS
+   ESTADÍSTICAS (PÚBLICO)
 ====================== */
 router.get("/stats/resumen", (req, res) => {
     const sql = `

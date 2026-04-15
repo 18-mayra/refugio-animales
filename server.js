@@ -222,27 +222,37 @@ app.get("/test-email", async (req, res) => {
 });
 
 // =============================
+// 🔐 ENDPOINT PARA VERIFICAR TOKEN Y ROL
+// =============================
+app.get("/api/verificar-admin", auth, (req, res) => {
+    console.log("🔍 Verificando admin:", req.usuario);
+    res.json({ 
+        autenticado: true, 
+        usuario: req.usuario,
+        esAdmin: req.usuario?.rol === "admin" || req.usuario?.rol === "superadmin"
+    });
+});
+
+// =============================
 // 📦 RUTAS API
 // =============================
 
-// Rutas públicas o con autenticación interna
+// Rutas públicas de animales (GET)
+app.use("/animales", animalesRoutes);
+
+// Rutas de ADMIN (requieren rol admin) - DEBEN IR ANTES que las rutas públicas
+app.use("/admin/animales", auth, role("admin"), animalesRoutes);
+app.use("/api/admin", auth, role("admin"), adminRoutes);
+
+// Rutas con autenticación básica
+app.use("/api/adopciones", auth, adopcionesRoutes);
 app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/password", passwordRoutes);
 app.use("/api/contacto", contactoRoutes);
 app.use("/api/mfa", mfaRoutes);
-
-// Rutas con autenticación básica
-app.use("/api/adopciones", auth, adopcionesRoutes);
 app.use("/api/sessions", auth, sessionRoutes);
 app.use("/api/token", auth, tokenRoutes);
 app.use("/api/settings", auth, userSettingsRoutes);
-
-// Rutas de ADMIN (requieren rol admin)
-app.use("/api/admin", auth, role("admin"), adminRoutes);
-app.use("/admin/animales", auth, role("admin"), animalesRoutes);
-
-// Rutas públicas de animales (GET)
-app.use("/animales", animalesRoutes);
 
 // =============================
 // 🚀 SERVIDOR
