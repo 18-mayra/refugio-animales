@@ -1,5 +1,3 @@
-// routes/animales.js - Versión CORREGIDA (sin depender de roleMiddleware)
-
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
@@ -108,68 +106,51 @@ router.get("/:id", (req, res) => {
 });
 
 /* ======================
-   AGREGAR (SOLO ADMIN) - Verificación manual
+   AGREGAR (SOLO ADMIN)
 ====================== */
 router.post("/", auth, (req, res) => {
-    // ✅ Verificar rol manualmente
     if (req.usuario?.rol !== "admin" && req.usuario?.rol !== "superadmin") {
-        console.log("❌ Usuario no autorizado:", req.usuario?.rol);
         return res.status(403).json({ error: "No tienes permisos de administrador" });
     }
     
     const { tipo, nombre, edad, raza, comportamiento, vacunas, enfermedades, descripcion, estado, imagen_url } = req.body;
     
-    console.log("📝 Creando animal por admin:", req.usuario?.nombre);
-    
     if (!tipo || !nombre) {
         return res.status(400).json({ error: "Tipo y nombre son requeridos" });
     }
     
-    const imagenFinal = imagen_url || "https://via.placeholder.com/300x200?text=Sin+Imagen";
+    // ✅ Imagen local por defecto (sin placeholder externo)
+    const imagenFinal = imagen_url || "/img/perro.png";
     
     const sql = `INSERT INTO animales 
-        (tipo, nombre, edad, raza, comportamiento, vacunas, enfermedades, descripcion, estado, imagen_url) 
+        (tipo, nombre, edad, raza, comportamento, vacunas, enfermedades, descripcion, estado, imagen_url) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     
     const values = [
-        tipo, 
-        nombre, 
-        edad || null, 
-        raza || null, 
-        comportamiento || null, 
-        vacunas || null, 
-        enfermedades || null, 
-        descripcion || null, 
-        estado || "Disponible",
-        imagenFinal
+        tipo, nombre, edad || null, raza || null,
+        comportamiento || null, vacunas || null, enfermedades || null,
+        descripcion || null, estado || "Disponible", imagenFinal
     ];
     
     db.query(sql, values, (err, result) => {
         if (err) {
             console.error("❌ Error SQL:", err);
-            return res.status(500).json({ error: "Error al registrar animal: " + err.message });
+            return res.status(500).json({ error: "Error al registrar animal" });
         }
         res.json({ ok: true, id: result.insertId, mensaje: "Animal registrado correctamente" });
     });
 });
 
 /* ======================
-   EDITAR (SOLO ADMIN) - Verificación manual
+   EDITAR (SOLO ADMIN)
 ====================== */
 router.put("/:id", auth, (req, res) => {
-    // ✅ Verificar rol manualmente
     if (req.usuario?.rol !== "admin" && req.usuario?.rol !== "superadmin") {
-        console.log("❌ Usuario no autorizado:", req.usuario?.rol);
         return res.status(403).json({ error: "No tienes permisos de administrador" });
     }
     
     const id = parseInt(req.params.id);
-    
-    if (isNaN(id)) {
-        return res.status(400).json({ error: "ID inválido" });
-    }
-    
-    console.log("✏️ Editando animal por admin:", req.usuario?.nombre);
+    if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
     
     db.query("SELECT id FROM animales WHERE id = ?", [id], (err, rows) => {
         if (err || rows.length === 0) {
@@ -187,34 +168,18 @@ router.put("/:id", auth, (req, res) => {
 });
 
 /* ======================
-   ELIMINAR (SOLO ADMIN) - Verificación manual
+   ELIMINAR (SOLO ADMIN)
 ====================== */
 router.delete("/:id", auth, (req, res) => {
-    // ✅ Verificar rol manualmente
-    console.log("🔍 DELETE - Usuario autenticado:", req.usuario);
-    console.log("🔍 DELETE - Rol del usuario:", req.usuario?.rol);
-    
     if (req.usuario?.rol !== "admin" && req.usuario?.rol !== "superadmin") {
-        console.log("❌ Usuario no autorizado para eliminar. Rol actual:", req.usuario?.rol);
         return res.status(403).json({ error: "No tienes permisos de administrador" });
     }
     
     const id = parseInt(req.params.id);
-    
-    if (isNaN(id)) {
-        return res.status(400).json({ error: "ID inválido" });
-    }
-    
-    console.log("🗑️ Eliminando animal ID:", id);
-    console.log("👤 Usuario que elimina:", req.usuario?.nombre);
+    if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
     
     db.query("SELECT id FROM animales WHERE id = ?", [id], (err, rows) => {
-        if (err) {
-            console.error("Error en SELECT:", err);
-            return res.status(500).json({ error: "Error al verificar animal" });
-        }
-        
-        if (rows.length === 0) {
+        if (err || rows.length === 0) {
             return res.status(404).json({ error: "Animal no encontrado" });
         }
         
@@ -223,7 +188,6 @@ router.delete("/:id", auth, (req, res) => {
                 console.error("Error al eliminar:", err2);
                 return res.status(500).json({ error: "Error al eliminar animal" });
             }
-            console.log("✅ Animal eliminado correctamente");
             res.json({ ok: true, mensaje: "Animal eliminado correctamente" });
         });
     });

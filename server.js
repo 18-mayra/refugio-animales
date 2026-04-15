@@ -5,7 +5,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const fs = require('fs');  //  AGREGAR ESTO
+const fs = require("fs");
 const db = require("./db");
 const csrf = require("csurf");
 const cookieParser = require("cookie-parser");
@@ -30,8 +30,8 @@ const contactoRoutes = require("./routes/contactoRoutes");
 // 📧 EMAIL
 const enviarCorreo = require("./utils/mailer");
 
-// ✅ CREAR CARPETA UPLOADS SI NO EXISTE
-const uploadDir = path.join(__dirname, 'public/uploads');
+// 📁 Crear carpeta uploads si no existe
+const uploadDir = path.join(__dirname, "public/uploads");
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
     console.log("📁 Carpeta public/uploads creada");
@@ -246,7 +246,7 @@ app.get("/api/verificar-admin", auth, (req, res) => {
 // 1. Rutas públicas (GET de animales)
 app.use("/animales", animalesRoutes);
 
-// 2. Rutas de ADMIN (solo requieren auth, la verificación de rol está dentro de animalesRoutes)
+// 2. Rutas de ADMIN (solo requieren auth)
 app.use("/admin/animales", auth, animalesRoutes);
 app.use("/api/admin", auth, adminRoutes);
 
