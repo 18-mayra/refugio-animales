@@ -12,26 +12,30 @@ function renderAuth() {
     if (!authLink) return;
 
     if (token && usuario.nombre) {
-
+        const inicial = usuario.nombre.charAt(0).toUpperCase();
+        const rolTexto = usuario.rol === "admin" ? "Administrador" : "Usuario";
+        const rolClass = usuario.rol === "admin" ? "admin" : "user";
+        
         authLink.innerHTML = `
-            <div style="display:flex;gap:10px;align-items:center;">
-                <span>👤 ${usuario.nombre}</span>
-
-                ${usuario.rol === "admin" ? `
-                    <a href="admin.html" style="background:green;color:white;padding:5px 10px;border-radius:10px;text-decoration:none;">
-                        Admin
-                    </a>` : ""
-                }
-
-                <button onclick="cerrarSesion()" style="background:red;color:white;border:none;padding:5px 10px;border-radius:10px;">
-                    Salir
+            <div class="user-menu">
+                <div class="user-avatar">${inicial}</div>
+                <div class="user-info">
+                    <span class="user-name">
+                        ${usuario.nombre}
+                        <span class="role-badge ${rolClass}">${rolTexto}</span>
+                    </span>
+                    <span class="user-role">🐾 Bienvenido</span>
+                </div>
+                <button onclick="cerrarSesion()" class="btn-logout">
+                    <span class="logout-icon">🚪</span>
+                    <span class="logout-text">Salir</span>
                 </button>
             </div>
         `;
     } else {
         authLink.innerHTML = `
-            <a href="login.html" style="padding:8px 15px;background:#667eea;color:white;border-radius:20px;text-decoration:none;">
-                Iniciar sesión
+            <a href="login.html" class="btn-login-nav">
+                <span>🔐 Iniciar sesión</span>
             </a>
         `;
     }
@@ -41,6 +45,5 @@ function cerrarSesion() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("usuario");
     localStorage.removeItem("refreshToken");
-
     window.location.href = "/login.html";
 }

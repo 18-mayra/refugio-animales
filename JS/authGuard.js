@@ -78,12 +78,12 @@ function soloAdmin() {
         }
     })
     .catch(() => {
-        cerrarSesion(); // ✅ Usar cerrarSesion en lugar de clear()
+        cerrarSesion();
     });
 }
 
 // ===============================
-// MOSTRAR NOMBRE DEL USUARIO EN EL NAVBAR
+// MOSTRAR NOMBRE DEL USUARIO EN EL NAVBAR (VERSIÓN BONITA)
 // ===============================
 function mostrarUsuario() {
     const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
@@ -91,14 +91,32 @@ function mostrarUsuario() {
     
     if (authLink) {
         if (usuario.nombre) {
+            const inicial = usuario.nombre.charAt(0).toUpperCase();
+            const rolTexto = usuario.rol === "admin" ? "Administrador" : "Usuario";
+            const rolClass = usuario.rol === "admin" ? "admin" : "user";
+            
             authLink.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span>🐾 Hola, ${usuario.nombre}</span>
-                    <button onclick="cerrarSesion()" style="background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Salir</button>
+                <div class="user-menu">
+                    <div class="user-avatar">${inicial}</div>
+                    <div class="user-info">
+                        <span class="user-name">
+                            ${usuario.nombre}
+                            <span class="role-badge ${rolClass}">${rolTexto}</span>
+                        </span>
+                        <span class="user-role">🐾 Bienvenido</span>
+                    </div>
+                    <button onclick="cerrarSesion()" class="btn-logout">
+                        <span class="logout-icon">🚪</span>
+                        <span class="logout-text">Salir</span>
+                    </button>
                 </div>
             `;
         } else {
-            authLink.innerHTML = `<a href="/login.html">Iniciar sesión</a>`;
+            authLink.innerHTML = `
+                <a href="/login.html" class="btn-login-nav">
+                    <span>🔐 Iniciar sesión</span>
+                </a>
+            `;
         }
     }
 }
