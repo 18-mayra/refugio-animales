@@ -1,7 +1,6 @@
 // JS/login.js - Login con verificación por email y sesión funcional
 
 const API_BASE_URL = window.location.origin;
-
 let userIdGlobal = null;
 let tiempoRestante = 0;
 let intervaloReloj = null;
@@ -10,12 +9,17 @@ let intervaloReloj = null;
 // INICIALIZAR
 // ===============================
 document.addEventListener("DOMContentLoaded", () => {
+    // ✅ CORREGIDO: usar 'accessToken'
+    const token = localStorage.getItem("accessToken");
 
-    const token = localStorage.getItem("token");
-
-    // 🔥 SI YA HAY TOKEN → REDIRIGE
+    // Si ya hay sesión, redirigir según rol
     if (token) {
-        window.location.href = "/";
+        const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+        if (usuario.rol === "admin" || usuario.rol === "superadmin") {
+            window.location.href = "/admin.html";
+        } else {
+            window.location.href = "/";
+        }
         return;
     }
 
@@ -41,7 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
 function generarCaptcha() {
     const num1 = Math.floor(Math.random() * 10) + 1;
     const num2 = Math.floor(Math.random() * 10) + 1;
-
     document.getElementById("captchaNum1").textContent = num1;
     document.getElementById("captchaNum2").textContent = num2;
     document.getElementById("captchaResultado").value = num1 + num2;
@@ -50,14 +53,12 @@ function generarCaptcha() {
 function validarCaptcha() {
     const input = document.getElementById("captchaInput").value;
     const resultado = document.getElementById("captchaResultado").value;
-
     if (parseInt(input) !== parseInt(resultado)) {
         mostrarNotificacion("Captcha incorrecto", "error");
         generarCaptcha();
         document.getElementById("captchaInput").value = "";
         return false;
     }
-
     return true;
 }
 
@@ -68,19 +69,14 @@ function mostrarNotificacion(mensaje, tipo) {
     const notif = document.createElement("div");
     notif.className = `notificacion ${tipo}`;
     notif.textContent = mensaje;
-
     document.body.appendChild(notif);
-
-    setTimeout(() => {
-        notif.remove();
-    }, 3000);
+    setTimeout(() => notif.remove(), 3000);
 }
 
 // ===============================
 // PASO 1: LOGIN
 // ===============================
 async function enviarCredenciales() {
-
     if (!validarCaptcha()) return;
 
     const email = document.getElementById("email").value.trim();
@@ -92,13 +88,9 @@ async function enviarCredenciales() {
     }
 
     try {
-
         const response = await fetch(`${API_BASE_URL}/api/usuarios/login/enviar-codigo`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: "include", // 🔥 IMPORTANTE
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password })
         });
 
@@ -115,7 +107,6 @@ async function enviarCredenciales() {
         document.getElementById("userEmail").textContent = email;
 
         iniciarTemporizador(600);
-
         mostrarNotificacion("Código enviado al correo", "exito");
 
     } catch (error) {
@@ -128,7 +119,6 @@ async function enviarCredenciales() {
 // PASO 2: VERIFICAR CÓDIGO
 // ===============================
 async function verificarCodigo() {
-
     const codigo = document.getElementById("codigo").value.trim();
 
     if (!codigo || codigo.length !== 6) {
@@ -143,17 +133,10 @@ async function verificarCodigo() {
     }
 
     try {
-
         const response = await fetch(`${API_BASE_URL}/api/usuarios/login/verificar-codigo`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: "include",
-            body: JSON.stringify({
-                userId: userIdGlobal,
-                codigo
-            })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: userIdGlobal, codigo })
         });
 
         const data = await response.json();
@@ -162,8 +145,8 @@ async function verificarCodigo() {
             throw new Error(data.error || "Error al verificar código");
         }
 
-        // 🔥 GUARDAR TOKEN CORRECTO
-        localStorage.setItem("token", data.accessToken);
+        // ✅ CORREGIDO: Guardar como 'accessToken'
+        localStorage.setItem("accessToken", data.accessToken);
 
         if (data.refreshToken) {
             localStorage.setItem("refreshToken", data.refreshToken);
@@ -175,8 +158,15 @@ async function verificarCodigo() {
 
         mostrarNotificacion("Login exitoso", "exito");
 
+        // ✅ REDIRECCIÓN SEGÚN ROL
         setTimeout(() => {
-            window.location.href = "/";
+            const rol = data.usuario?.rol || "";
+            console.log("👑 Redirigiendo con rol:", rol);
+            if (rol === "admin" || rol === "superadmin") {
+                window.location.href = "/admin.html";
+            } else {
+                window.location.href = "/";
+            }
         }, 1000);
 
     } catch (error) {
@@ -189,33 +179,23 @@ async function verificarCodigo() {
 // REENVIAR CÓDIGO
 // ===============================
 async function reenviarCodigo() {
-
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
     try {
-
         const response = await fetch(`${API_BASE_URL}/api/usuarios/login/enviar-codigo`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: "include",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password })
         });
 
         const data = await response.json();
 
-        if (!response.ok) {
-            throw new Error(data.mensaje || "Error");
-        }
+        if (!response.ok) throw new Error(data.mensaje || "Error");
 
         userIdGlobal = data.userId;
-
         if (intervaloReloj) clearInterval(intervaloReloj);
-
         iniciarTemporizador(600);
-
         mostrarNotificacion("Código reenviado", "exito");
 
     } catch (error) {
@@ -227,13 +207,9 @@ async function reenviarCodigo() {
 // TEMPORIZADOR
 // ===============================
 function iniciarTemporizador(segundos) {
-
     tiempoRestante = segundos;
-
     if (intervaloReloj) clearInterval(intervaloReloj);
-
     intervaloReloj = setInterval(() => {
-
         if (tiempoRestante <= 0) {
             clearInterval(intervaloReloj);
             document.getElementById("timer").textContent = "Expirado";
@@ -242,33 +218,24 @@ function iniciarTemporizador(segundos) {
             tiempoRestante--;
             actualizarTimer();
         }
-
     }, 1000);
-
     actualizarTimer();
 }
 
 function actualizarTimer() {
     const minutos = Math.floor(tiempoRestante / 60);
     const segundos = tiempoRestante % 60;
-
-    document.getElementById("timer").textContent =
-        `${minutos}:${segundos.toString().padStart(2, "0")}`;
+    document.getElementById("timer").textContent = `${minutos}:${segundos.toString().padStart(2, "0")}`;
 }
 
 // ===============================
 // VOLVER
 // ===============================
 function volverALogin() {
-
     if (intervaloReloj) clearInterval(intervaloReloj);
-
     userIdGlobal = null;
-
     document.getElementById("codigoSection").style.display = "none";
     document.getElementById("loginSection").style.display = "block";
-
     document.getElementById("codigo").value = "";
-
     generarCaptcha();
 }

@@ -1,6 +1,6 @@
 // solicitud.js - Formulario de solicitud de adopción
 
-const API_URL = "https://refugio-animales.onrender.com";
+const API_URL = window.location.origin;
 
 // Obtener datos del animal desde localStorage
 const animalId = localStorage.getItem("adopcion_animal_id");
@@ -50,8 +50,10 @@ if (form) {
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         
-        // ✅ CORREGIDO: usar 'accessToken' en lugar de 'token'
+        // ✅ CORREGIDO: usar 'accessToken' (no 'token')
         const token = localStorage.getItem("accessToken");
+        
+        console.log("🔍 Token encontrado:", token ? "SÍ" : "NO");
         
         if (!token) {
             alert("⚠️ Debes iniciar sesión para solicitar una adopción");
@@ -62,6 +64,7 @@ if (form) {
         const nombre = document.getElementById("nombre")?.value || "";
         const email = document.getElementById("email")?.value || "";
         const telefono = document.getElementById("telefono")?.value || "";
+        const direccion = document.getElementById("direccion")?.value || "";
         const mensaje = document.getElementById("mensaje")?.value || "";
         
         if (!nombre || !email || !telefono) {
@@ -74,6 +77,7 @@ if (form) {
             nombre: nombre,
             email: email,
             telefono: telefono,
+            direccion: direccion,
             mensaje: mensaje
         };
         
@@ -124,4 +128,12 @@ if (form) {
 // Cargar información del animal al iniciar
 document.addEventListener("DOMContentLoaded", () => {
     cargarInfoAnimal();
+    
+    // Verificar sesión al cargar la página
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+        console.log("⚠️ No hay sesión activa");
+    } else {
+        console.log("✅ Sesión activa");
+    }
 });
