@@ -1,18 +1,15 @@
-// JS/login.js - Login con verificación por email y sesión funcional
+// JS/login.js - Login con verificación por email
 
 const API_BASE_URL = window.location.origin;
 let userIdGlobal = null;
 let tiempoRestante = 0;
 let intervaloReloj = null;
 
-// ===============================
-// INICIALIZAR
-// ===============================
 document.addEventListener("DOMContentLoaded", () => {
-    // ✅ CORREGIDO: usar 'accessToken'
+    // Limpiar cualquier sesión anterior para pruebas
+    // localStorage.clear(); // Descomenta para probar
+    
     const token = localStorage.getItem("accessToken");
-
-    // Si ya hay sesión, redirigir según rol
     if (token) {
         const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
         if (usuario.rol === "admin" || usuario.rol === "superadmin") {
@@ -22,14 +19,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         return;
     }
-
+    
     generarCaptcha();
-
+    
     document.getElementById("loginBtn").onclick = enviarCredenciales;
     document.getElementById("verificarBtn").onclick = verificarCodigo;
     document.getElementById("reenviarCodigo").onclick = reenviarCodigo;
     document.getElementById("volverLoginBtn").onclick = volverALogin;
-
+    
     const toggleBtn = document.getElementById("togglePasswordBtn");
     if (toggleBtn) {
         toggleBtn.onclick = () => {
@@ -39,9 +36,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// ===============================
-// CAPTCHA
-// ===============================
 function generarCaptcha() {
     const num1 = Math.floor(Math.random() * 10) + 1;
     const num2 = Math.floor(Math.random() * 10) + 1;
@@ -62,9 +56,6 @@ function validarCaptcha() {
     return true;
 }
 
-// ===============================
-// NOTIFICACIONES
-// ===============================
 function mostrarNotificacion(mensaje, tipo) {
     const notif = document.createElement("div");
     notif.className = `notificacion ${tipo}`;
@@ -73,91 +64,93 @@ function mostrarNotificacion(mensaje, tipo) {
     setTimeout(() => notif.remove(), 3000);
 }
 
-// ===============================
-// PASO 1: LOGIN
-// ===============================
 async function enviarCredenciales() {
     if (!validarCaptcha()) return;
-
+    
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
-
+    
     if (!email || !password) {
         mostrarNotificacion("Completa todos los campos", "error");
         return;
     }
-
+    
     try {
         const response = await fetch(`${API_BASE_URL}/api/usuarios/login/enviar-codigo`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password })
         });
-
+        
         const data = await response.json();
-
+        
         if (!response.ok) {
             throw new Error(data.mensaje || data.error || "Error en login");
         }
-
+        
         userIdGlobal = data.userId;
-
+        
         document.getElementById("loginSection").style.display = "none";
         document.getElementById("codigoSection").style.display = "block";
         document.getElementById("userEmail").textContent = email;
-
+        
         iniciarTemporizador(600);
         mostrarNotificacion("Código enviado al correo", "exito");
-
+        
     } catch (error) {
         console.error(error);
         mostrarNotificacion(error.message, "error");
     }
 }
 
-// ===============================
-// PASO 2: VERIFICAR CÓDIGO
-// ===============================
 async function verificarCodigo() {
     const codigo = document.getElementById("codigo").value.trim();
-
+    
     if (!codigo || codigo.length !== 6) {
         mostrarNotificacion("Código inválido", "error");
         return;
     }
-
+    
     if (!userIdGlobal) {
         mostrarNotificacion("Error de sesión", "error");
         volverALogin();
         return;
     }
-
+    
     try {
         const response = await fetch(`${API_BASE_URL}/api/usuarios/login/verificar-codigo`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userId: userIdGlobal, codigo })
         });
-
+        
         const data = await response.json();
-
+        
+        console.log("📦 Respuesta del servidor:", data);
+        
         if (!response.ok) {
             throw new Error(data.error || "Error al verificar código");
         }
-
-        // ✅ CORREGIDO: Guardar como 'accessToken'
-        localStorage.setItem("accessToken", data.accessToken);
-
+        
+        // ✅ GUARDAR TOKEN
+        if (data.accessToken) {
+            localStorage.setItem("accessToken", data.accessToken);
+            console.log("✅ Token guardado:", data.accessToken.substring(0, 50) + "...");
+        } else {
+            console.error("❌ No hay accessToken en la respuesta");
+        }
+        
         if (data.refreshToken) {
             localStorage.setItem("refreshToken", data.refreshToken);
         }
-
+        
         if (data.usuario) {
             localStorage.setItem("usuario", JSON.stringify(data.usuario));
+            console.log("✅ Usuario guardado:", data.usuario);
         }
-
+        
         mostrarNotificacion("Login exitoso", "exito");
-
+        
         // ✅ REDIRECCIÓN SEGÚN ROL
         setTimeout(() => {
             const rol = data.usuario?.rol || "";
@@ -168,44 +161,38 @@ async function verificarCodigo() {
                 window.location.href = "/";
             }
         }, 1000);
-
+        
     } catch (error) {
         console.error(error);
         mostrarNotificacion(error.message, "error");
     }
 }
 
-// ===============================
-// REENVIAR CÓDIGO
-// ===============================
 async function reenviarCodigo() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-
+    
     try {
         const response = await fetch(`${API_BASE_URL}/api/usuarios/login/enviar-codigo`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password })
         });
-
+        
         const data = await response.json();
-
+        
         if (!response.ok) throw new Error(data.mensaje || "Error");
-
+        
         userIdGlobal = data.userId;
         if (intervaloReloj) clearInterval(intervaloReloj);
         iniciarTemporizador(600);
         mostrarNotificacion("Código reenviado", "exito");
-
+        
     } catch (error) {
         mostrarNotificacion(error.message, "error");
     }
 }
 
-// ===============================
-// TEMPORIZADOR
-// ===============================
 function iniciarTemporizador(segundos) {
     tiempoRestante = segundos;
     if (intervaloReloj) clearInterval(intervaloReloj);
@@ -228,9 +215,6 @@ function actualizarTimer() {
     document.getElementById("timer").textContent = `${minutos}:${segundos.toString().padStart(2, "0")}`;
 }
 
-// ===============================
-// VOLVER
-// ===============================
 function volverALogin() {
     if (intervaloReloj) clearInterval(intervaloReloj);
     userIdGlobal = null;
