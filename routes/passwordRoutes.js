@@ -11,7 +11,7 @@ function generarCodigo() {
 }
 
 // ===============================
-// ENVIAR CÓDIGO DE RECUPERACIÓN (6 DÍGITOS)
+// ENVIAR CÓDIGO DE RECUPERACIÓN
 // ===============================
 router.post("/recuperar", async (req, res) => {
     const { email } = req.body;
@@ -27,12 +27,16 @@ router.post("/recuperar", async (req, res) => {
         }
 
         if (result.length === 0) {
+            // Por seguridad, decimos que se envió aunque no exista
             return res.json({ message: "Si el email existe, recibirás un código de recuperación" });
         }
 
         const user = result[0];
         const codigo = generarCodigo();
-        const expires = new Date(Date.now() + 15 * 60 * 1000);
+        const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+        // Eliminar códigos anteriores
+        db.query("DELETE FROM password_resets WHERE user_id = ?", [user.id]);
 
         db.query(
             "INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)",
@@ -43,25 +47,15 @@ router.post("/recuperar", async (req, res) => {
                     return res.status(500).json({ message: "Error del servidor" });
                 }
 
-                const textoMensaje = `
-Hola ${user.nombre || user.email},
-
-Tu código de verificación es: ${codigo}
-
-Este código expira en 15 minutos.
-
-Si no solicitaste esto, ignora este mensaje.
-
-Refugio de Animales 🐾
-                `;
-
+                // 📧 Enviar código por EMAIL al usuario
                 const htmlMensaje = `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                         <h2 style="color: #4CAF50;">🐾 Refugio de Animales</h2>
                         <h3>🔐 Recuperación de contraseña</h3>
                         <p>Hola <strong>${user.nombre || user.email}</strong>,</p>
+                        <p>Recibimos una solicitud para restablecer tu contraseña.</p>
                         <p>Tu código de verificación es:</p>
-                        <div style="background-color: #f4f4f4; padding: 15px; font-size: 28px; text-align: center; letter-spacing: 5px; border-radius: 5px;">
+                        <div style="background-color: #f4f4f4; padding: 15px; font-size: 32px; text-align: center; letter-spacing: 5px; border-radius: 5px;">
                             <strong style="color: #4CAF50;">${codigo}</strong>
                         </div>
                         <p>Este código expira en <strong>15 minutos</strong>.</p>
@@ -71,23 +65,30 @@ Refugio de Animales 🐾
                     </div>
                 `;
 
-                await enviarCorreo(user.email, "🔐 Código de recuperación", textoMensaje, htmlMensaje);
-                console.log("📧 Código enviado a:", user.email);
-                console.log("🔑 CÓDIGO:", codigo);
-
-                res.json({ message: "Revisa tu correo, recibirás un código de 6 dígitos" });
+                const resultado = await enviarCorreo(user.email, "🔐 Código de recuperación", `Tu código es: ${codigo}`, htmlMensaje);
+                
+                if (resultado.success) {
+                    console.log("📧 Código de recuperación enviado a:", user.email);
+                    res.json({ 
+                        message: "Revisa tu correo, recibirás un código de 6 dígitos",
+                        userId: user.id
+                    });
+                } else {
+                    console.error("❌ Error al enviar email:", resultado.error);
+                    res.status(500).json({ message: "Error al enviar el código. Intenta nuevamente." });
+                }
             }
         );
     });
 });
 
 // ===============================
-// RESTABLECER CONTRASEÑA
+// VERIFICAR CÓDIGO Y RESTABLECER CONTRASEÑA
 // ===============================
 router.post("/reset", async (req, res) => {
-    const { codigo, password } = req.body;
+    const { userId, codigo, password } = req.body;
 
-    if (!codigo || !password) {
+    if (!userId || !codigo || !password) {
         return res.status(400).json({ message: "Código y contraseña requeridos" });
     }
 
@@ -96,41 +97,43 @@ router.post("/reset", async (req, res) => {
     }
 
     db.query(
-        "SELECT * FROM password_resets WHERE token = ? AND expires_at > NOW()",
-        [codigo],
+        "SELECT * FROM password_resets WHERE user_id = ? AND token = ? AND expires_at > NOW()",
+        [userId, codigo],
         async (err, result) => {
             if (err || result.length === 0) {
                 return res.status(400).json({ message: "Código inválido o expirado" });
             }
 
-            const reset = result[0];
             const hashedPassword = await bcrypt.hash(password, 10);
 
             db.query(
                 "UPDATE usuarios SET password = ? WHERE id = ?",
-                [hashedPassword, reset.user_id],
+                [hashedPassword, userId],
                 async (err2) => {
                     if (err2) {
                         return res.status(500).json({ message: "Error actualizando contraseña" });
                     }
 
-                    // Enviar confirmación de cambio
-                    db.query("SELECT email FROM usuarios WHERE id = ?", [reset.user_id], async (err3, userResult) => {
+                    // Eliminar código usado
+                    db.query("DELETE FROM password_resets WHERE user_id = ?", [userId]);
+
+                    // Enviar confirmación por email
+                    const htmlConfirmacion = `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px;">
+                            <h2 style="color: #4CAF50;">✅ Contraseña actualizada</h2>
+                            <p>Tu contraseña ha sido actualizada correctamente.</p>
+                            <p>Si no realizaste este cambio, contacta con soporte inmediatamente.</p>
+                            <hr>
+                            <p>Refugio de Animales 🐾</p>
+                        </div>
+                    `;
+                    
+                    db.query("SELECT email FROM usuarios WHERE id = ?", [userId], (err3, userResult) => {
                         if (!err3 && userResult.length > 0) {
-                            const htmlConfirmacion = `
-                                <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                                    <h2 style="color: #4CAF50;">✅ Contraseña actualizada</h2>
-                                    <p>Tu contraseña ha sido actualizada correctamente.</p>
-                                    <p>Si no realizaste este cambio, contacta con soporte inmediatamente.</p>
-                                    <hr>
-                                    <p>Refugio de Animales 🐾</p>
-                                </div>
-                            `;
-                            await enviarCorreo(userResult[0].email, "✅ Contraseña actualizada", "Tu contraseña ha sido actualizada", htmlConfirmacion);
+                            enviarCorreo(userResult[0].email, "✅ Contraseña actualizada", "Tu contraseña ha sido actualizada", htmlConfirmacion);
                         }
                     });
 
-                    db.query("DELETE FROM password_resets WHERE token = ?", [codigo]);
                     res.json({ message: "Contraseña actualizada correctamente" });
                 }
             );

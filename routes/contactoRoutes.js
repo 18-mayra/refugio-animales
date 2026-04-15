@@ -21,51 +21,36 @@ router.post("/", async (req, res) => {
     }
 
     try {
-        // Guardar en base de datos (opcional)
+        // Guardar en base de datos
         const sql = "INSERT INTO contactos (nombre, email, telefono, mensaje, fecha) VALUES (?, ?, ?, ?, NOW())";
         db.query(sql, [nombre, email, telefono || null, mensaje], (err) => {
             if (err) console.error("Error guardando en BD:", err);
         });
 
-        // Enviar correo al administrador
+        // 📧 1. Enviar correo al ADMIN (TI)
         const adminEmail = process.env.EMAIL_USER || "psgm.3112@gmail.com";
         const asuntoAdmin = `📧 Nuevo mensaje de contacto de ${nombre}`;
-        const textoAdmin = `
-📩 NUEVO MENSAJE DE CONTACTO
-
-👤 Nombre: ${nombre}
-📧 Email: ${email}
-📱 Teléfono: ${telefono || "No especificado"}
-💬 Mensaje:
-${mensaje}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📅 Fecha: ${new Date().toLocaleString()}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        
+        const htmlAdmin = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                <h2 style="color: #4CAF50;">📬 NUEVO MENSAJE DE CONTACTO</h2>
+                <div style="background-color: #f4f4f4; padding: 15px; border-radius: 5px;">
+                    <p><strong>👤 Nombre:</strong> ${nombre}</p>
+                    <p><strong>📧 Email:</strong> ${email}</p>
+                    <p><strong>📱 Teléfono:</strong> ${telefono || "No especificado"}</p>
+                    <p><strong>💬 Mensaje:</strong></p>
+                    <p style="background-color: white; padding: 10px; border-radius: 5px;">${mensaje}</p>
+                </div>
+                <p style="font-size: 12px; color: #666; margin-top: 20px;">📅 Fecha: ${new Date().toLocaleString()}</p>
+                <hr>
+                <p style="font-size: 12px;">Refugio de Animales - Sistema de contacto</p>
+            </div>
         `;
         
-        const resultadoAdmin = await enviarCorreo(adminEmail, asuntoAdmin, textoAdmin);
-        console.log("📧 Resultado envío a admin:", resultadoAdmin.success ? "✅ Éxito" : "❌ Fallo");
-
-        // Enviar confirmación al usuario
+        const resultadoAdmin = await enviarCorreo(adminEmail, asuntoAdmin, `Nuevo mensaje de ${nombre}`, htmlAdmin);
+        
+        // 📧 2. Enviar confirmación al USUARIO
         const asuntoUsuario = "✅ Hemos recibido tu mensaje - Refugio de Animales";
-        const textoUsuario = `
-Hola ${nombre},
-
-Gracias por contactarnos. Hemos recibido tu mensaje y nos pondremos en contacto contigo pronto.
-
-📝 Tu mensaje:
-"${mensaje}"
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🐾 Refugio de Animales
-📞 (449) 123-4567
-📧 refugio@animales.com
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Este es un mensaje automático, por favor no responder.
-        `;
-        
         const htmlUsuario = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                 <h2 style="color: #4CAF50;">✅ ¡Mensaje recibido!</h2>
@@ -80,14 +65,21 @@ Este es un mensaje automático, por favor no responder.
             </div>
         `;
         
-        const resultadoUsuario = await enviarCorreo(email, asuntoUsuario, textoUsuario, htmlUsuario);
-        console.log("📧 Resultado envío a usuario:", resultadoUsuario.success ? "✅ Éxito" : "❌ Fallo");
+        const resultadoUsuario = await enviarCorreo(email, asuntoUsuario, `Hemos recibido tu mensaje`, htmlUsuario);
 
-        if (!resultadoAdmin.success && !resultadoUsuario.success) {
-            return res.status(500).json({ error: "Error al enviar los correos. Intenta más tarde." });
+        if (!resultadoAdmin.success) {
+            console.error("❌ Error al enviar a admin:", resultadoAdmin.error);
+        }
+        
+        if (!resultadoUsuario.success) {
+            console.error("❌ Error al enviar al usuario:", resultadoUsuario.error);
         }
 
-        res.json({ mensaje: "Mensaje enviado correctamente. Te contactaremos pronto." });
+        res.json({ 
+            mensaje: "Mensaje enviado correctamente. Te contactaremos pronto.",
+            adminNotificado: resultadoAdmin.success,
+            usuarioNotificado: resultadoUsuario.success
+        });
 
     } catch (error) {
         console.error("Error general:", error);

@@ -68,7 +68,7 @@ async function enviarCredenciales(event) {
     const password = document.getElementById("password").value;
     
     if (!email || !password) {
-        mostrarError("Por favor, completa todos los campos");
+        mostrarNotificacion("Por favor, completa todos los campos", "error");
         return;
     }
     
@@ -97,13 +97,14 @@ async function enviarCredenciales(event) {
         mostrarSeccionCodigo(email);
         
         // Iniciar temporizador de 10 minutos
-        iniciarTemporizador(600); // 10 minutos = 600 segundos
+        iniciarTemporizador(600);
         
-        mostrarExito("📧 Código enviado a tu correo electrónico");
+        // ✅ NOTIFICACIÓN: Mostrar mensaje que el correo fue enviado
+        mostrarNotificacion("📧 ¡Código enviado! Revisa tu bandeja de entrada o la carpeta de SPAM", "exito");
         
     } catch (error) {
         console.error("Error:", error);
-        mostrarError(error.message);
+        mostrarNotificacion(error.message, "error");
     } finally {
         mostrarLoading(false);
     }
@@ -118,12 +119,12 @@ async function verificarCodigo(event) {
     const codigo = document.getElementById("codigo").value.trim();
     
     if (!codigo || codigo.length !== 6) {
-        mostrarError("Por favor, ingresa el código de 6 dígitos");
+        mostrarNotificacion("Por favor, ingresa el código de 6 dígitos", "error");
         return;
     }
     
     if (!userIdGlobal) {
-        mostrarError("Error: Identificación de usuario no encontrada. Intenta nuevamente.");
+        mostrarNotificacion("Error: Identificación de usuario no encontrada. Intenta nuevamente.", "error");
         reiniciarLogin();
         return;
     }
@@ -159,7 +160,7 @@ async function verificarCodigo(event) {
                 localStorage.setItem("usuario", JSON.stringify(data.usuario));
             }
             
-            mostrarExito("✅ ¡Bienvenido! Redirigiendo...");
+            mostrarNotificacion("✅ ¡Bienvenido! Redirigiendo...", "exito");
             
             // Redirigir según el rol
             setTimeout(() => {
@@ -175,7 +176,7 @@ async function verificarCodigo(event) {
         
     } catch (error) {
         console.error("Error:", error);
-        mostrarError(error.message);
+        mostrarNotificacion(error.message, "error");
     } finally {
         mostrarLoading(false);
     }
@@ -189,7 +190,7 @@ async function reenviarCodigo() {
     const password = document.getElementById("password").value;
     
     if (!email || !password) {
-        mostrarError("Por favor, ingresa tu email y contraseña nuevamente");
+        mostrarNotificacion("Por favor, ingresa tu email y contraseña nuevamente", "error");
         reiniciarLogin();
         return;
     }
@@ -217,11 +218,11 @@ async function reenviarCodigo() {
         if (intervaloReloj) clearInterval(intervaloReloj);
         iniciarTemporizador(600);
         
-        mostrarExito("📧 Código reenviado. Revisa tu correo.");
+        mostrarNotificacion("📧 Código reenviado. Revisa tu correo.", "exito");
         
     } catch (error) {
         console.error("Error:", error);
-        mostrarError(error.message);
+        mostrarNotificacion(error.message, "error");
     } finally {
         mostrarLoading(false);
     }
@@ -334,48 +335,52 @@ function reiniciarLogin() {
 }
 
 // ===============================
-// MOSTRAR ERROR
+// MOSTRAR NOTIFICACIÓN (ESTILO TOAST)
 // ===============================
-function mostrarError(mensaje) {
-    const errorDiv = document.getElementById("errorMessage");
-    if (errorDiv) {
-        errorDiv.textContent = mensaje;
-        errorDiv.style.display = "block";
-        errorDiv.style.color = "#f44336";
+function mostrarNotificacion(mensaje, tipo = "info") {
+    // Crear elemento de notificación
+    const notificacion = document.createElement("div");
+    notificacion.className = `notificacion ${tipo}`;
+    notificacion.innerHTML = `
+        <div class="notificacion-contenido">
+            <span class="notificacion-icono">${tipo === "exito" ? "✅" : tipo === "error" ? "❌" : "ℹ️"}</span>
+            <span class="notificacion-mensaje">${mensaje}</span>
+        </div>
+    `;
+    
+    // Estilos de la notificación
+    notificacion.style.position = "fixed";
+    notificacion.style.top = "20px";
+    notificacion.style.right = "20px";
+    notificacion.style.zIndex = "9999";
+    notificacion.style.backgroundColor = tipo === "exito" ? "#4CAF50" : tipo === "error" ? "#f44336" : "#2196F3";
+    notificacion.style.color = "white";
+    notificacion.style.padding = "15px 20px";
+    notificacion.style.borderRadius = "8px";
+    notificacion.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+    notificacion.style.fontFamily = "Arial, sans-serif";
+    notificacion.style.fontSize = "14px";
+    notificacion.style.animation = "slideIn 0.3s ease";
+    
+    document.body.appendChild(notificacion);
+    
+    // Eliminar después de 5 segundos
+    setTimeout(() => {
+        notificacion.style.animation = "slideOut 0.3s ease";
         setTimeout(() => {
-            errorDiv.style.display = "none";
-        }, 5000);
-    } else {
-        alert(mensaje);
-    }
-}
-
-// ===============================
-// MOSTRAR ÉXITO
-// ===============================
-function mostrarExito(mensaje) {
-    const successDiv = document.getElementById("successMessage");
-    if (successDiv) {
-        successDiv.textContent = mensaje;
-        successDiv.style.display = "block";
-        successDiv.style.color = "#4CAF50";
-        setTimeout(() => {
-            successDiv.style.display = "none";
-        }, 5000);
-    }
+            if (notificacion && notificacion.remove) {
+                notificacion.remove();
+            }
+        }, 300);
+    }, 5000);
 }
 
 // ===============================
 // MOSTRAR LOADING
 // ===============================
 function mostrarLoading(mostrar) {
-    const loadingDiv = document.getElementById("loadingSpinner");
     const loginBtn = document.getElementById("loginBtn");
     const verificarBtn = document.getElementById("verificarBtn");
-    
-    if (loadingDiv) {
-        loadingDiv.style.display = mostrar ? "block" : "none";
-    }
     
     if (loginBtn) {
         loginBtn.disabled = mostrar;
@@ -404,3 +409,29 @@ function cargarTema() {
 function volverALogin() {
     reiniciarLogin();
 }
+
+// Agregar estilos de animación
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
