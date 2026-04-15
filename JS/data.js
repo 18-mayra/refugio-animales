@@ -1,30 +1,79 @@
-// data.js
+// data.js - Usando API en lugar de localStorage
+
+const API_BASE_URL = window.location.origin;
 
 const Data = {
-  obtenerAnimales() {
-    return JSON.parse(localStorage.getItem("animales")) || [];
-  },
+    async obtenerAnimales() {
+        try {
+            const res = await fetch(`${API_BASE_URL}/animales`);
+            if (!res.ok) throw new Error("Error al obtener animales");
+            return await res.json();
+        } catch (error) {
+            console.error("Error obteniendo animales:", error);
+            return [];
+        }
+    },
 
-  guardarAnimales(animales) {
-    localStorage.setItem("animales", JSON.stringify(animales));
-  },
+    async obtenerAnimalPorId(id) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/animales/${id}`);
+            if (!res.ok) throw new Error("Animal no encontrado");
+            return await res.json();
+        } catch (error) {
+            console.error("Error obteniendo animal:", error);
+            return null;
+        }
+    },
 
-  agregarAnimal(animal) {
-    const animales = this.obtenerAnimales();
-    animales.push(animal);
-    localStorage.setItem("animales", JSON.stringify(animales));
-  },
+    async agregarAnimal(animal, token) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/admin/animales`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(animal)
+            });
+            if (!res.ok) throw new Error("Error al agregar animal");
+            return await res.json();
+        } catch (error) {
+            console.error("Error agregando animal:", error);
+            throw error;
+        }
+    },
 
-  eliminarAnimal(id) {
-    let animales = this.obtenerAnimales();
-    animales = animales.filter(a => a.id !== id);
-    this.guardarAnimales(animales);
-  },
+    async eliminarAnimal(id, token) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/admin/animales/${id}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+            if (!res.ok) throw new Error("Error al eliminar animal");
+            return await res.json();
+        } catch (error) {
+            console.error("Error eliminando animal:", error);
+            throw error;
+        }
+    },
 
-  actualizarAnimal(animalActualizado) {
-    const animales = this.obtenerAnimales().map(a =>
-      a.id === animalActualizado.id ? animalActualizado : a
-    );
-    this.guardarAnimales(animales);
-  }
+    async actualizarAnimal(id, animal, token) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/admin/animales/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(animal)
+            });
+            if (!res.ok) throw new Error("Error al actualizar animal");
+            return await res.json();
+        } catch (error) {
+            console.error("Error actualizando animal:", error);
+            throw error;
+        }
+    }
 };

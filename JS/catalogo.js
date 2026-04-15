@@ -10,8 +10,6 @@
     let animalesGlobal = [];
     let timeoutBusqueda = null;
 
-    const API_URL = "https://refugio-animales.onrender.com";
-
     function escaparHTML(texto) {
         if (!texto) return "";
         return texto.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -75,12 +73,25 @@
 
     async function cargarAnimales() {
         mostrarLoader(true);
-        try { animalesGlobal = await API.obtenerAnimales(); filtrarAnimales(); } catch (error) { console.error(error); if (resultadosDiv) resultadosDiv.innerHTML = `<p class="error">❌ Error al cargar</p>`; } finally { mostrarLoader(false); }
+        try { 
+            animalesGlobal = await API.obtenerAnimales(); 
+            filtrarAnimales(); 
+        } catch (error) { 
+            console.error(error); 
+            if (resultadosDiv) resultadosDiv.innerHTML = `<p class="error">❌ Error al cargar</p>`; 
+        } finally { 
+            mostrarLoader(false); 
+        }
     }
 
+    // ✅ CORREGIDO: usar 'accessToken' en lugar de 'token'
     window.solicitarAdopcion = function(animalId, animalNombre) {
-        const token = localStorage.getItem("token");
-        if (!token) { alert("⚠️ Debes iniciar sesión"); window.location.href = "login.html"; return; }
+        const token = localStorage.getItem("accessToken");
+        if (!token) { 
+            alert("⚠️ Debes iniciar sesión"); 
+            window.location.href = "login.html"; 
+            return; 
+        }
         localStorage.setItem("adopcion_animal_id", animalId);
         localStorage.setItem("adopcion_animal_nombre", animalNombre);
         window.location.href = "solicitud.html";
@@ -97,5 +108,10 @@
         if (btnFiltrar) btnFiltrar.addEventListener("click", () => filtrarAnimales());
     }
 
-    document.addEventListener("DOMContentLoaded", () => { if (typeof API !== 'undefined') { setupEventos(); cargarAnimales(); } else console.error("API no cargada"); });
+    document.addEventListener("DOMContentLoaded", () => { 
+        if (typeof API !== 'undefined') { 
+            setupEventos(); 
+            cargarAnimales(); 
+        } else console.error("API no cargada"); 
+    });
 })();

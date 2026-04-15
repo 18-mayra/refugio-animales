@@ -21,7 +21,6 @@ function verificarSesion() {
         return false;
     }
     
-    // Verificar expiración del token
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         const expiracion = payload.exp * 1000;
@@ -51,7 +50,6 @@ function soloAdmin() {
         return;
     }
 
-    // Usar la URL base automática (funciona en local y producción)
     const API_BASE_URL = window.location.origin;
 
     fetch(`${API_BASE_URL}/api/usuarios/token/validar`, {
@@ -70,9 +68,7 @@ function soloAdmin() {
             throw new Error("Sin usuario");
         }
 
-        const rol = String(data.usuario.rol || "")
-            .toLowerCase()
-            .trim();
+        const rol = String(data.usuario.rol || "").toLowerCase().trim();
 
         console.log("👑 ROL GUARD:", rol);
 
@@ -82,8 +78,7 @@ function soloAdmin() {
         }
     })
     .catch(() => {
-        localStorage.clear();
-        window.location.href = "/login.html";
+        cerrarSesion(); // ✅ Usar cerrarSesion en lugar de clear()
     });
 }
 
@@ -114,14 +109,10 @@ function mostrarUsuario() {
 const paginasPublicas = ["login.html", "registro.html", "recuperar.html"];
 const paginaActual = window.location.pathname.split("/").pop();
 
-// Si es admin.html, verificar rol de admin
 if (paginaActual === "admin.html") {
     soloAdmin();
-} 
-// Si no es página pública, verificar sesión
-else if (!paginasPublicas.includes(paginaActual)) {
+} else if (!paginasPublicas.includes(paginaActual)) {
     verificarSesion();
 }
 
-// Mostrar usuario en todas las páginas
 document.addEventListener("DOMContentLoaded", mostrarUsuario);
