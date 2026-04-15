@@ -111,29 +111,40 @@
 </script>
 
 <script>
-const token = localStorage.getItem("token");
-const API_URL = "https://refugio-animales.onrender.com";
+// ✅ CORREGIDO: usar 'accessToken' en lugar de 'token'
+const token = localStorage.getItem("accessToken");
+const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+const authLink = document.getElementById("authLink");
 
-if (token) {
-    fetch(API_URL + "/api/usuarios/token/validar", {
-        headers: { "Authorization": "Bearer " + token }
-    })
-    .then(res => res.ok ? res.json() : Promise.reject())
-    .then(data => {
-        if (data.usuario) {
-            const usuario = data.usuario;
-            const rol = String(usuario.rol || "").toLowerCase().trim();
-            const authLink = document.getElementById("authLink");
-            authLink.innerHTML = `<span>👤 ${usuario.nombre} (${rol})</span> <button onclick="logout()">Salir</button>`;
-            if (rol === "admin") {
-                authLink.innerHTML += `<a href="admin.html" style="margin-left:10px;">⚙️ Admin</a>`;
-            }
-        }
-    })
-    .catch(() => localStorage.clear());
+console.log("🔍 Token:", token ? "SÍ" : "NO");
+console.log("🔍 Usuario:", usuario);
+
+if (authLink) {
+    if (token && usuario.nombre) {
+        // Usuario logueado
+        const rol = usuario.rol || "usuario";
+        const rolTexto = rol === "admin" ? "Administrador" : "Usuario";
+        
+        authLink.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="color: white;">🐾 Hola, ${usuario.nombre}</span>
+                ${rol === "admin" ? `<a href="admin.html" style="background: #4CAF50; border: none; color: white; padding: 5px 12px; border-radius: 20px; cursor: pointer; text-decoration: none; font-size: 12px;">📊 Admin</a>` : ""}
+                <button onclick="cerrarSesion()" style="background: #f44336; border: none; color: white; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 12px;">Salir</button>
+            </div>
+        `;
+    } else {
+        // Usuario no logueado
+        authLink.innerHTML = `<a href="login.html" style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 8px 20px; border-radius: 30px; color: white; text-decoration: none;">Iniciar sesión</a>`;
+    }
 }
 
-function logout() { localStorage.clear(); window.location.reload(); }
+function cerrarSesion() {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("usuario");
+    window.location.href = "/login.html";
+}
 </script>
+
 </body>
 </html>
