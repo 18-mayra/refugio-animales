@@ -8,9 +8,12 @@ function escaparHTML(texto) {
     return texto.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
+// ✅ CORREGIDO: Usar URL base dinámica
+const API_BASE_URL = window.location.origin;
+
 async function obtenerCSRF() {
     try {
-        const res = await fetch("http://localhost:3000/api/csrf-token", { credentials: "include" });
+        const res = await fetch(`${API_BASE_URL}/api/csrf-token`, { credentials: "include" });
         const data = await res.json();
         csrfToken = data.csrfToken;
         console.log("✅ CSRF Token obtenido");
@@ -22,10 +25,11 @@ async function subirImagen(file) {
     const formData = new FormData();
     formData.append('imagen', file);
     try {
-        const token = localStorage.getItem("token");
+        // ✅ CORREGIDO: usar accessToken en lugar de token
+        const token = localStorage.getItem("accessToken");
         console.log("📡 Subiendo imagen:", file.name);
         
-        const res = await fetch("http://localhost:3000/api/admin/upload", {
+        const res = await fetch(`${API_BASE_URL}/api/admin/upload`, {
             method: "POST",
             headers: { "Authorization": "Bearer " + token },
             body: formData
@@ -44,23 +48,24 @@ async function subirImagen(file) {
 
 function getImagenUrl(imagenUrl) {
     if (!imagenUrl || imagenUrl === '/img/default.png') {
-        return "http://localhost:5500/img/perro.png";
+        return `${API_BASE_URL}/img/perro.png`;
     }
     if (imagenUrl.startsWith('/uploads/')) {
-        return `http://localhost:3000${imagenUrl}`;
+        return `${API_BASE_URL}${imagenUrl}`;
     }
     if (imagenUrl.startsWith('img/')) {
-        return `http://localhost:5500/${imagenUrl}`;
+        return `${API_BASE_URL}/${imagenUrl}`;
     }
     if (imagenUrl.startsWith('http')) {
         return imagenUrl;
     }
-    return "http://localhost:5500/img/perro.png";
+    return `${API_BASE_URL}/img/perro.png`;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
     await obtenerCSRF();
-    const token = localStorage.getItem("token");
+    // ✅ CORREGIDO: usar accessToken
+    const token = localStorage.getItem("accessToken");
     if (!token) { alert("Debes iniciar sesión"); window.location.href = "login.html"; return; }
     try {
         const data = await API.request("/api/usuarios/token/validar");
@@ -156,7 +161,7 @@ function iniciarAdmin() {
         if (!animales?.length) { lista.innerHTML = "<p>No hay animales registrados</p>"; return; }
         animales.forEach(a => {
             lista.innerHTML += `<div class="card-admin">
-                <div class="card-img"><img src="${getImagenUrl(a.imagen_url)}" onerror="this.src='http://localhost:5500/img/perro.png'"></div>
+                <div class="card-img"><img src="${getImagenUrl(a.imagen_url)}" onerror="this.src='${API_BASE_URL}/img/perro.png'"></div>
                 <div class="card-info">
                     <h3>${escaparHTML(a.nombre)} <span class="tipo-badge">${escaparHTML(a.tipo)}</span></h3>
                     <p><strong>Edad:</strong> ${escaparHTML(a.edad)} años</p>
