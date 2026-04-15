@@ -183,10 +183,17 @@ router.delete("/:id", auth, role("admin"), (req, res) => {
         return res.status(400).json({ error: "ID inválido" });
     }
     
-    console.log("🗑️ Eliminando animal por admin:", req.usuario?.nombre);
+    console.log("🗑️ Eliminando animal ID:", id);
+    console.log("👤 Usuario que elimina:", req.usuario?.nombre);
+    console.log("👑 Rol del usuario:", req.usuario?.rol);
     
     db.query("SELECT id FROM animales WHERE id = ?", [id], (err, rows) => {
-        if (err || rows.length === 0) {
+        if (err) {
+            console.error("Error en SELECT:", err);
+            return res.status(500).json({ error: "Error al verificar animal" });
+        }
+        
+        if (rows.length === 0) {
             return res.status(404).json({ error: "Animal no encontrado" });
         }
         
@@ -195,6 +202,7 @@ router.delete("/:id", auth, role("admin"), (req, res) => {
                 console.error("Error al eliminar:", err2);
                 return res.status(500).json({ error: "Error al eliminar animal" });
             }
+            console.log("✅ Animal eliminado correctamente");
             res.json({ ok: true, mensaje: "Animal eliminado correctamente" });
         });
     });

@@ -108,7 +108,7 @@ app.use(cors({
             return callback(null, true);
         }
         console.log("CORS bloqueado para:", origin);
-        return callback(null, true); // Permitir en producción
+        return callback(null, true);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -122,16 +122,14 @@ const csrfProtection = csrf({
     cookie: {
         httpOnly: true,
         sameSite: "lax",
-        secure: false  // En producción con HTTPS cambiar a true
+        secure: false
     }
 });
 
-// Endpoint para obtener CSRF token
 app.get("/api/csrf-token", csrfProtection, (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
 });
 
-// Middleware condicional para CSRF (solo POST, PUT, DELETE no públicos)
 app.use((req, res, next) => {
     if (req.method === "GET") return next();
 
@@ -240,7 +238,7 @@ app.get("/api/verificar-admin", auth, (req, res) => {
 // Rutas públicas de animales (GET)
 app.use("/animales", animalesRoutes);
 
-// Rutas de ADMIN (requieren rol admin) - DEBEN IR ANTES que las rutas públicas
+// ✅ Rutas de ADMIN (requieren rol admin)
 app.use("/admin/animales", auth, role("admin"), animalesRoutes);
 app.use("/api/admin", auth, role("admin"), adminRoutes);
 
