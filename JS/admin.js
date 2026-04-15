@@ -1,8 +1,6 @@
 // admin.js - Panel de administración
 
 let animalesGlobal = [];
-let csrfToken = "";
-
 const API_BASE_URL = window.location.origin;
 
 function escaparHTML(texto) {
@@ -10,58 +8,31 @@ function escaparHTML(texto) {
     return texto.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-async function obtenerCSRF() {
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/csrf-token`, { credentials: "include" });
-        const data = await res.json();
-        csrfToken = data.csrfToken;
-        console.log("✅ CSRF Token obtenido");
-    } catch (error) { 
-        console.error("Error CSRF:", error); 
-    }
+// ✅ Función para obtener headers con token
+function getAuthHeaders() {
+    const token = localStorage.getItem("accessToken");
+    return {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+    };
 }
 
-async function subirImagen(file) {
-    if (!file) return null;
-    const formData = new FormData();
-    formData.append('imagen', file);
+// ✅ Verificar si el token es válido
+async function verificarToken() {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return false;
+    
     try {
-        const token = localStorage.getItem("accessToken");
-        console.log("📡 Subiendo imagen:", file.name);
-        
-        const res = await fetch(`${API_BASE_URL}/api/admin/upload`, {
-            method: "POST",
-            headers: { "Authorization": "Bearer " + token },
-            body: formData
+        const res = await fetch(`${API_BASE_URL}/api/usuarios/token/validar`, {
+            headers: { "Authorization": `Bearer ${token}` }
         });
-        
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        console.log("✅ Imagen subida:", data.url);
-        return data.url;
-    } catch (error) {
-        console.error("❌ Error subiendo imagen:", error);
-        alert("Error al subir la imagen: " + error.message);
-        return null;
+        return res.ok;
+    } catch {
+        return false;
     }
 }
 
-function getImagenUrl(imagenUrl) {
-    if (!imagenUrl || imagenUrl === '/img/default.png') {
-        return `${API_BASE_URL}/img/perro.png`;
-    }
-    if (imagenUrl.startsWith('/uploads/')) {
-        return `${API_BASE_URL}${imagenUrl}`;
-    }
-    if (imagenUrl.startsWith('img/')) {
-        return `${API_BASE_URL}/${imagenUrl}`;
-    }
-    if (imagenUrl.startsWith('http')) {
-        return imagenUrl;
-    }
-    return `${API_BASE_URL}/img/perro.png`;
-}
-
+// ✅ Cargar animales
 async function cargarAnimales() { 
     try { 
         const res = await fetch(`${API_BASE_URL}/animales`);
@@ -71,18 +42,32 @@ async function cargarAnimales() {
         console.log("✅ Animales cargados:", animalesGlobal.length);
     } catch (error) { 
         console.error("Error cargando animales:", error);
-        document.getElementById("listaAnimales").innerHTML = "<p>Error al cargar animales</p>";
+        const lista = document.getElementById("listaAnimales");
+        if (lista) lista.innerHTML = "<p>Error al cargar animales</p>";
     } 
 }
 
+// ✅ Cargar sesiones (requiere token)
 async function cargarSesiones() {
     const contenedor = document.getElementById("sesiones");
     if (!contenedor) return;
+    
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+        contenedor.innerHTML = "<p>No autorizado</p>";
+        return;
+    }
+    
     try {
-        const token = localStorage.getItem("accessToken");
         const res = await fetch(`${API_BASE_URL}/api/usuarios/sessions`, {
-            headers: { "Authorization": "Bearer " + token }
+            headers: { "Authorization": `Bearer ${token}` }
         });
+        
+        if (res.status === 401 || res.status === 403) {
+            contenedor.innerHTML = "<p>Sesión expirada. <a href='login.html'>Inicia sesión nuevamente</a></p>";
+            return;
+        }
+        
         if (!res.ok) throw new Error("Error al cargar sesiones");
         const data = await res.json();
         
@@ -90,28 +75,40 @@ async function cargarSesiones() {
             contenedor.innerHTML = "<p>No hay sesiones activas</p>";
             return;
         }
-        contenedor.innerHTML = `<h3>Sesiones activas (${data.length})</h3>` + 
-            data.map(s => `
-                <div class="card-admin-session">
-                    <p><strong>👤 Usuario:</strong> ${escaparHTML(s.nombre)} (${escaparHTML(s.email)})</p>
-                    <p><strong>🌐 IP:</strong> ${escaparHTML(s.ip)}</p>
-                    <button onclick="cerrarSesionUsuario(${s.id})" class="btn-eliminar">🔒 Cerrar sesión</button>
-                </div>
-            `).join('');
+        contenedor.innerHTML = data.map(s => `
+            <div class="card-admin-session">
+                <p><strong>👤 Usuario:</strong> ${escaparHTML(s.nombre)} (${escaparHTML(s.email)})</p>
+                <p><strong>🌐 IP:</strong> ${escaparHTML(s.ip)}</p>
+                <button onclick="cerrarSesionUsuario(${s.id})" class="btn-eliminar">🔒 Cerrar sesión</button>
+            </div>
+        `).join('');
     } catch (error) {
         console.error(error);
         contenedor.innerHTML = "<p>Error al cargar sesiones</p>";
     }
 }
 
+// ✅ Cargar usuarios (requiere token)
 async function cargarUsuarios() {
     const contenedor = document.getElementById("usuarios");
     if (!contenedor) return;
+    
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+        contenedor.innerHTML = "<p>No autorizado</p>";
+        return;
+    }
+    
     try {
-        const token = localStorage.getItem("accessToken");
         const res = await fetch(`${API_BASE_URL}/api/usuarios/todos`, {
-            headers: { "Authorization": "Bearer " + token }
+            headers: { "Authorization": `Bearer ${token}` }
         });
+        
+        if (res.status === 401 || res.status === 403) {
+            contenedor.innerHTML = "<p>Sesión expirada. <a href='login.html'>Inicia sesión nuevamente</a></p>";
+            return;
+        }
+        
         if (!res.ok) throw new Error("Error al cargar usuarios");
         const data = await res.json();
         
@@ -119,28 +116,40 @@ async function cargarUsuarios() {
             contenedor.innerHTML = "<p>No hay usuarios</p>";
             return;
         }
-        contenedor.innerHTML = `<h3>Usuarios registrados (${data.length})</h3>` + 
-            data.map(u => `
-                <div class="card-admin-user">
-                    <p><strong>${escaparHTML(u.nombre)}</strong> (${escaparHTML(u.email)})</p>
-                    <p><strong>Rol:</strong> ${escaparHTML(u.rol)} | <strong>Estado:</strong> ${u.activo ? '✅ Activo' : '❌ Bloqueado'}</p>
-                    ${u.rol !== "admin" ? `<button onclick="bloquearUsuario(${u.id})" class="btn-eliminar">🔒 Bloquear</button>` : ""}
-                </div>
-            `).join('');
+        contenedor.innerHTML = data.map(u => `
+            <div class="card-admin-user">
+                <p><strong>${escaparHTML(u.nombre)}</strong> (${escaparHTML(u.email)})</p>
+                <p><strong>Rol:</strong> ${escaparHTML(u.rol)} | <strong>Estado:</strong> ${u.activo ? '✅ Activo' : '❌ Bloqueado'}</p>
+                ${u.rol !== "admin" ? `<button onclick="bloquearUsuario(${u.id})" class="btn-eliminar">🔒 Bloquear</button>` : ""}
+            </div>
+        `).join('');
     } catch (error) {
         console.error(error);
         contenedor.innerHTML = "<p>Error al cargar usuarios</p>";
     }
 }
 
+// ✅ Cargar adopciones (requiere token)
 async function cargarAdopciones() {
     const contenedor = document.getElementById("adopciones");
     if (!contenedor) return;
+    
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+        contenedor.innerHTML = "<p>No autorizado</p>";
+        return;
+    }
+    
     try {
-        const token = localStorage.getItem("accessToken");
         const res = await fetch(`${API_BASE_URL}/api/adopciones`, {
-            headers: { "Authorization": "Bearer " + token }
+            headers: { "Authorization": `Bearer ${token}` }
         });
+        
+        if (res.status === 401 || res.status === 403) {
+            contenedor.innerHTML = "<p>Sesión expirada. <a href='login.html'>Inicia sesión nuevamente</a></p>";
+            return;
+        }
+        
         if (!res.ok) throw new Error("Error al cargar adopciones");
         const data = await res.json();
         
@@ -148,26 +157,26 @@ async function cargarAdopciones() {
             contenedor.innerHTML = "<p>No hay solicitudes de adopción</p>";
             return;
         }
-        contenedor.innerHTML = `<h3>Solicitudes de adopción (${data.length})</h3>` + 
-            data.map(a => `
-                <div class="card-admin-adopcion">
-                    <p><strong>${escaparHTML(a.usuario_nombre)}</strong> quiere adoptar <strong>${escaparHTML(a.animal_nombre)}</strong></p>
-                    <p>📧 ${escaparHTML(a.email)} | 📱 ${escaparHTML(a.telefono)}</p>
-                    <p>Estado: <strong>${escaparHTML(a.estado)}</strong></p>
-                    ${a.estado === "pendiente" ? `
-                        <div>
-                            <button onclick="aprobarAdopcion(${a.id})" class="btn-aprobar">✅ Aprobar</button>
-                            <button onclick="rechazarAdopcion(${a.id})" class="btn-rechazar">❌ Rechazar</button>
-                        </div>
-                    ` : ""}
-                </div>
-            `).join('');
+        contenedor.innerHTML = data.map(a => `
+            <div class="card-admin-adopcion">
+                <p><strong>${escaparHTML(a.usuario_nombre)}</strong> quiere adoptar <strong>${escaparHTML(a.animal_nombre)}</strong></p>
+                <p>📧 ${escaparHTML(a.email)} | 📱 ${escaparHTML(a.telefono)}</p>
+                <p>Estado: <strong>${escaparHTML(a.estado)}</strong></p>
+                ${a.estado === "pendiente" ? `
+                    <div>
+                        <button onclick="aprobarAdopcion(${a.id})" class="btn-aprobar">✅ Aprobar</button>
+                        <button onclick="rechazarAdopcion(${a.id})" class="btn-rechazar">❌ Rechazar</button>
+                    </div>
+                ` : ""}
+            </div>
+        `).join('');
     } catch (error) {
         console.error(error);
         contenedor.innerHTML = "<p>Error al cargar solicitudes</p>";
     }
 }
 
+// ✅ Mostrar animales
 function mostrarAnimales(animales) {
     const lista = document.getElementById("listaAnimales");
     if (!lista) return;
@@ -178,7 +187,7 @@ function mostrarAnimales(animales) {
     }
     animales.forEach(a => {
         lista.innerHTML += `<div class="card-admin">
-            <div class="card-img"><img src="${getImagenUrl(a.imagen_url)}" onerror="this.src='${API_BASE_URL}/img/perro.png'"></div>
+            <div class="card-img"><img src="${a.imagen_url || '/img/perro.png'}" onerror="this.src='${API_BASE_URL}/img/perro.png'"></div>
             <div class="card-info">
                 <h3>${escaparHTML(a.nombre)} <span class="tipo-badge">${escaparHTML(a.tipo)}</span></h3>
                 <p><strong>Edad:</strong> ${escaparHTML(a.edad)} años</p>
@@ -193,6 +202,41 @@ function mostrarAnimales(animales) {
     });
 }
 
+// ✅ Subir imagen
+async function subirImagen(file) {
+    if (!file) return null;
+    const formData = new FormData();
+    formData.append('imagen', file);
+    
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+        alert("No hay sesión activa");
+        return null;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/upload`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` },
+            body: formData
+        });
+        
+        if (res.status === 401 || res.status === 403) {
+            alert("Sesión expirada. Inicia sesión nuevamente.");
+            cerrarSesionAdmin();
+            return null;
+        }
+        
+        if (!res.ok) throw new Error("Error al subir");
+        const data = await res.json();
+        return data.url;
+    } catch (error) {
+        console.error("Error subiendo imagen:", error);
+        alert("Error al subir la imagen: " + error.message);
+        return null;
+    }
+}
+
 // ===============================
 // INICIALIZAR
 // ===============================
@@ -201,9 +245,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     const token = localStorage.getItem("accessToken");
     const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
-    
-    console.log("Token:", token ? "SÍ" : "NO");
-    console.log("Usuario rol:", usuario.rol);
     
     if (!token) {
         alert("Debes iniciar sesión");
@@ -223,14 +264,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         authLink.innerHTML = `
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span>🐾 Hola, ${usuario.nombre}</span>
-                <button onclick="cerrarSesionAdmin()" style="background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Salir</button>
+                <button onclick="cerrarSesionAdmin()" class="btn-cerrar-sesion">Salir</button>
             </div>
         `;
     }
     
-    await obtenerCSRF();
-    
-    // Cargar todos los datos
+    // Cargar datos
     await cargarAnimales();
     await cargarSesiones();
     await cargarUsuarios();
@@ -247,7 +286,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             let imagenUrl = null;
             if (imagenFile) {
                 imagenUrl = await subirImagen(imagenFile);
-                if (!imagenUrl) { alert("Error al subir la imagen"); return; }
+                if (!imagenUrl) return;
             }
 
             const animal = { 
@@ -263,15 +302,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             };
             if (imagenUrl) animal.imagen_url = imagenUrl;
             
+            const token = localStorage.getItem("accessToken");
             try {
-                const token = localStorage.getItem("accessToken");
                 let res;
                 if (id) {
                     res = await fetch(`${API_BASE_URL}/admin/animales/${id}`, {
                         method: "PUT",
                         headers: { 
                             "Content-Type": "application/json",
-                            "Authorization": "Bearer " + token
+                            "Authorization": `Bearer ${token}`
                         },
                         body: JSON.stringify(animal)
                     });
@@ -280,7 +319,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         method: "POST",
                         headers: { 
                             "Content-Type": "application/json",
-                            "Authorization": "Bearer " + token
+                            "Authorization": `Bearer ${token}`
                         },
                         body: JSON.stringify(animal)
                     });
@@ -297,7 +336,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
     
-    // Configurar filtros
+    // Filtros
     const buscador = document.getElementById("buscador");
     const filtroTipo = document.getElementById("filtroTipo");
     const filtroEstado = document.getElementById("filtroEstado");
@@ -326,9 +365,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Botón cerrar sesión
     const btnCerrar = document.getElementById("btnCerrarSesion");
     if (btnCerrar) {
-        btnCerrar.onclick = () => {
-            cerrarSesionAdmin();
-        };
+        btnCerrar.onclick = cerrarSesionAdmin;
     }
 });
 
@@ -347,54 +384,89 @@ window.editarAnimal = function(id) {
 };
 
 window.eliminarAnimal = async function(id) { 
-    if (confirm("¿Eliminar este animal?")) { 
-        const token = localStorage.getItem("accessToken");
-        await fetch(`${API_BASE_URL}/admin/animales/${id}`, { 
+    if (!confirm("¿Eliminar este animal?")) return;
+    const token = localStorage.getItem("accessToken");
+    if (!token) { cerrarSesionAdmin(); return; }
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/admin/animales/${id}`, { 
             method: "DELETE",
-            headers: { "Authorization": "Bearer " + token }
-        }); 
-        location.reload(); 
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Error al eliminar");
+        alert("✅ Animal eliminado");
+        location.reload();
+    } catch (error) {
+        alert("Error: " + error.message);
     } 
 };
 
 window.bloquearUsuario = async function(id) { 
-    if (confirm("¿Bloquear este usuario?")) { 
-        const token = localStorage.getItem("accessToken");
-        await fetch(`${API_BASE_URL}/api/usuarios/bloquear/${id}`, { 
+    if (!confirm("¿Bloquear este usuario?")) return;
+    const token = localStorage.getItem("accessToken");
+    if (!token) { cerrarSesionAdmin(); return; }
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/usuarios/bloquear/${id}`, { 
             method: "PUT",
-            headers: { "Authorization": "Bearer " + token }
-        }); 
-        location.reload(); 
-    } 
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Error al bloquear");
+        alert("✅ Usuario bloqueado");
+        location.reload();
+    } catch (error) {
+        alert("Error: " + error.message);
+    }
 };
 
 window.cerrarSesionUsuario = async function(id) { 
-    if (confirm("¿Cerrar esta sesión?")) { 
-        const token = localStorage.getItem("accessToken");
-        await fetch(`${API_BASE_URL}/api/sessions/${id}`, { 
+    if (!confirm("¿Cerrar esta sesión?")) return;
+    const token = localStorage.getItem("accessToken");
+    if (!token) { cerrarSesionAdmin(); return; }
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/sessions/${id}`, { 
             method: "DELETE",
-            headers: { "Authorization": "Bearer " + token }
-        }); 
-        location.reload(); 
-    } 
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Error al cerrar sesión");
+        alert("✅ Sesión cerrada");
+        location.reload();
+    } catch (error) {
+        alert("Error: " + error.message);
+    }
 };
 
 window.aprobarAdopcion = async function(id) { 
     const token = localStorage.getItem("accessToken");
-    await fetch(`${API_BASE_URL}/api/adopciones/aprobar/${id}`, { 
-        method: "PUT",
-        headers: { "Authorization": "Bearer " + token }
-    }); 
-    alert("✅ Adopción aprobada"); 
-    location.reload(); 
+    if (!token) { cerrarSesionAdmin(); return; }
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/adopciones/aprobar/${id}`, { 
+            method: "PUT",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Error al aprobar");
+        alert("✅ Adopción aprobada"); 
+        location.reload();
+    } catch (error) {
+        alert("Error: " + error.message);
+    }
 };
 
 window.rechazarAdopcion = async function(id) { 
     const token = localStorage.getItem("accessToken");
-    await fetch(`${API_BASE_URL}/api/adopciones/rechazar/${id}`, { 
-        method: "PUT",
-        headers: { "Authorization": "Bearer " + token }
-    }); 
-    alert("❌ Adopción rechazada"); 
-    location.reload(); 
+    if (!token) { cerrarSesionAdmin(); return; }
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/adopciones/rechazar/${id}`, { 
+            method: "PUT",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Error al rechazar");
+        alert("❌ Adopción rechazada"); 
+        location.reload();
+    } catch (error) {
+        alert("Error: " + error.message);
+    }
 };
