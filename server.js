@@ -5,6 +5,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const fs = require('fs');  //  AGREGAR ESTO
 const db = require("./db");
 const csrf = require("csurf");
 const cookieParser = require("cookie-parser");
@@ -28,6 +29,13 @@ const contactoRoutes = require("./routes/contactoRoutes");
 
 // 📧 EMAIL
 const enviarCorreo = require("./utils/mailer");
+
+// ✅ CREAR CARPETA UPLOADS SI NO EXISTE
+const uploadDir = path.join(__dirname, 'public/uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log("📁 Carpeta public/uploads creada");
+}
 
 const app = express();
 app.set("trust proxy", 1);
