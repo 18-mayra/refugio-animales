@@ -114,6 +114,8 @@ app.use((req, res, next) => {
     const rutasLibres = [
         "/api/usuarios/login",
         "/api/usuarios/registro",
+        "/api/usuarios/login/enviar-codigo",
+        "/api/usuarios/login/verificar-codigo",
         "/api/mfa/send",
         "/api/mfa/verify",
         "/api/usuarios/refresh",
@@ -180,25 +182,18 @@ app.get("/test-email", async (req, res) => {
     console.log("🧪 Probando envío de email con Brevo...");
     
     const resultado = await enviarCorreo(
-        "psgm.3112@gmail.com", // Cambia esto si quieres probar con otro email
+        "psgm.3112@gmail.com",
         "✅ Prueba Brevo - Refugio de Animales",
-        "Si estás leyendo esto, la configuración de Brevo funciona perfectamente. ¡Felicidades! Tu servidor está listo para enviar correos.",
+        "Si estás leyendo esto, la configuración de Brevo funciona perfectamente.",
         `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
             <h2 style="color: #4CAF50;">🐾 ¡Prueba exitosa!</h2>
-            <p>Si estás viendo este correo con formato HTML, la configuración de <strong>Brevo</strong> está funcionando correctamente.</p>
+            <p>Si estás viendo este correo, la configuración de <strong>Brevo</strong> está funcionando correctamente.</p>
             <div style="background-color: #f4f4f4; padding: 15px; border-radius: 5px; margin: 15px 0;">
                 <p><strong>✅ Estado:</strong> Conectado</p>
                 <p><strong>📧 Email:</strong> ${process.env.EMAIL_USER}</p>
                 <p><strong>🕐 Fecha:</strong> ${new Date().toLocaleString()}</p>
             </div>
-            <p>Tu servidor ya puede enviar:</p>
-            <ul>
-                <li>📧 Correos de bienvenida</li>
-                <li>🔐 Códigos de recuperación</li>
-                <li>📋 Confirmaciones de adopción</li>
-                <li>📬 Mensajes de contacto</li>
-            </ul>
             <hr>
             <p style="font-size: 12px; color: #666;">Refugio de Animales - Configuración de email exitosa 🎉</p>
         </div>
@@ -223,15 +218,8 @@ app.get("/test-email", async (req, res) => {
                 <head><title>Error de Email ❌</title></head>
                 <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
                     <h1 style="color: #f44336;">❌ Error al enviar email</h1>
-                    <p>Hubo un problema al enviar el correo de prueba.</p>
-                    <pre style="background: #f4f4f4; padding: 15px; text-align: left;">${JSON.stringify(resultado.error, null, 2)}</pre>
-                    <p>Verifica:</p>
-                    <ul style="text-align: left; display: inline-block;">
-                        <li>Que la API Key de Brevo sea correcta</li>
-                        <li>Que el email ${process.env.EMAIL_USER} esté verificado en Brevo</li>
-                        <li>Que no hayas excedido el límite de 300 emails/día</li>
-                    </ul>
-                    <br>
+                    <p>Error: ${JSON.stringify(resultado.error)}</p>
+                    <p>Verifica que BREVO_API_KEY y EMAIL_USER estén configurados en Render</p>
                     <a href="/" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Volver al inicio</a>
                 </body>
             </html>

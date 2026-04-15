@@ -14,9 +14,9 @@ const { body, validationResult } = require("express-validator");
 
 const SECRET = process.env.JWT_SECRET || "mi_clave_super_secreta";
 
-/* ===============================
-   REGISTRO
-================================ */
+// ===============================
+// REGISTRO
+// ===============================
 router.post("/registro", async (req, res) => {
   try {
     const { nombre, email, password } = req.body;
@@ -28,7 +28,6 @@ router.post("/registro", async (req, res) => {
       async (err) => {
         if (err) return res.status(500).json({ mensaje: "Error registro" });
         
-        // Enviar email de bienvenida
         try {
           const htmlBienvenida = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
@@ -40,21 +39,13 @@ router.post("/registro", async (req, res) => {
                 <li>✅ Dar seguimiento a tus solicitudes</li>
                 <li>✅ Recibir notificaciones de nuevos animales</li>
               </ul>
-              <div style="background-color: #f4f4f4; padding: 10px; border-radius: 5px; margin: 15px 0;">
-                <p style="margin: 0;">📧 <strong>${email}</strong></p>
-              </div>
               <p>¡Juntos podemos darles un hogar a muchos animalitos!</p>
               <hr>
               <p style="font-size: 12px; color: #666;">Refugio de Animales - Amor sin condiciones</p>
             </div>
           `;
           
-          await enviarCorreo(
-            email, 
-            "🐾 ¡Bienvenido al Refugio de Animales!", 
-            `Hola ${nombre}, gracias por registrarte en el Refugio de Animales.`, 
-            htmlBienvenida
-          );
+          await enviarCorreo(email, "🐾 ¡Bienvenido al Refugio de Animales!", `Hola ${nombre}, gracias por registrarte.`, htmlBienvenida);
           console.log("📧 Email de bienvenida enviado a:", email);
         } catch (emailError) {
           console.error("Error enviando email de bienvenida:", emailError);
@@ -68,13 +59,12 @@ router.post("/registro", async (req, res) => {
   }
 });
 
-/* ===============================
-   LOGIN
-================================ */
+// ===============================
+// ENVIAR CÓDIGO DE VERIFICACIÓN (PASO 1)
+// ===============================
 router.post(
-  "/login",
+  "/login/enviar-codigo",
   loginLimiter,
-  auditoria,
   body("email").isEmail().withMessage("Email inválido"),
   body("password").isLength({ min: 4 }).withMessage("Password muy corto"),
   async (req, res) => {
@@ -86,68 +76,213 @@ router.post(
     const { email, password } = req.body;
 
     db.query("SELECT * FROM usuarios WHERE email = ?", [email], async (err, result) => {
-      if (err) return res.status(500).json({ mensaje: "Error servidor" });
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ mensaje: "Error servidor" });
+      }
+      
       if (result.length === 0) {
-        return res.status(400).json({ mensaje: "Usuario no encontrado" });
+        return res.status(401).json({ mensaje: "Credenciales incorrectas" });
       }
 
       const usuario = result[0];
+      
       if (usuario.activo === 0) {
         return res.status(403).json({ mensaje: "Usuario bloqueado" });
       }
 
       const match = await bcrypt.compare(password, usuario.password);
       if (!match) {
-        return res.status(400).json({ mensaje: "Contraseña incorrecta" });
+        return res.status(401).json({ mensaje: "Credenciales incorrectas" });
       }
 
-      // Limpiar tokens antiguos
-      db.query("DELETE FROM refresh_tokens WHERE user_id = ?", [usuario.id]);
-      db.query("DELETE FROM sesiones WHERE user_id = ?", [usuario.id]);
+      // Eliminar códigos anteriores no usados
+      db.query("DELETE FROM codigos_verificacion WHERE user_id = ? AND usado = FALSE", [usuario.id]);
 
-      // ACCESS TOKEN - 24 HORAS
-      const accessToken = jwt.sign(
-        { id: usuario.id, rol: usuario.rol, nombre: usuario.nombre, email: usuario.email },
-        SECRET,
-        { expiresIn: "24h" }
-      );
+      // Generar código de 6 dígitos
+      const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
 
-      // REFRESH TOKEN - 30 DÍAS
-      const refreshToken = jwt.sign(
-        { id: usuario.id },
-        SECRET,
-        { expiresIn: "30d" }
-      );
-
+      // Guardar código en la base de datos
       db.query(
-        "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))",
-        [usuario.id, refreshToken]
-      );
+        "INSERT INTO codigos_verificacion (user_id, codigo, expires_at) VALUES (?, ?, ?)",
+        [usuario.id, codigo, expires],
+        async (err2) => {
+          if (err2) {
+            console.error("Error guardando código:", err2);
+            return res.status(500).json({ error: "Error al generar código" });
+          }
 
-      db.query(
-        "INSERT INTO sesiones (user_id, token, ip, user_agent) VALUES (?, ?, ?, ?)",
-        [usuario.id, accessToken, req.ip, req.headers["user-agent"]],
-        (err) => {
-          if (err) return res.status(500).json({ mensaje: "Error sesión" });
-          res.json({
-            accessToken,
-            refreshToken,
-            usuario: {
-              id: usuario.id,
-              email: usuario.email,
-              rol: usuario.rol,
-              nombre: usuario.nombre
-            }
-          });
+          // Enviar email con el código
+          const htmlCodigo = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+              <h2 style="color: #4CAF50;">🔐 Código de verificación</h2>
+              <p>Hola <strong>${usuario.nombre}</strong>,</p>
+              <p>Recibimos una solicitud para iniciar sesión en tu cuenta.</p>
+              <p>Tu código de acceso es:</p>
+              <div style="background-color: #f4f4f4; padding: 20px; font-size: 32px; text-align: center; letter-spacing: 5px; border-radius: 5px;">
+                <strong style="color: #4CAF50;">${codigo}</strong>
+              </div>
+              <p>Este código expira en <strong>10 minutos</strong>.</p>
+              <p><strong>⚠️ No compartas este código con nadie.</strong></p>
+              <p>Si no intentaste iniciar sesión, ignora este mensaje.</p>
+              <hr>
+              <p style="font-size: 12px; color: #666;">Refugio de Animales 🐾</p>
+            </div>
+          `;
+
+          const textoPlano = `
+🔐 CÓDIGO DE VERIFICACIÓN
+
+Hola ${usuario.nombre},
+
+Tu código de acceso es: ${codigo}
+
+Este código expira en 10 minutos.
+
+No compartas este código con nadie.
+
+Refugio de Animales 🐾
+          `;
+
+          console.log("📧 Enviando código a:", email);
+          console.log("🔑 CÓDIGO:", codigo);
+          
+          const resultado = await enviarCorreo(email, "🔐 Código de verificación", textoPlano, htmlCodigo);
+          
+          if (resultado.success) {
+            console.log("✅ Código enviado exitosamente a:", email);
+            res.json({ 
+              mensaje: "Código enviado a tu correo",
+              userId: usuario.id,
+              expira: expires
+            });
+          } else {
+            console.error("❌ Error al enviar email:", resultado.error);
+            res.status(500).json({ error: "Error al enviar el código por email" });
+          }
         }
       );
     });
   }
 );
 
-/* ===============================
-   REFRESH TOKEN
-================================ */
+// ===============================
+// VERIFICAR CÓDIGO Y COMPLETAR LOGIN (PASO 2)
+// ===============================
+router.post("/login/verificar-codigo", async (req, res) => {
+  const { userId, codigo } = req.body;
+
+  if (!userId || !codigo) {
+    return res.status(400).json({ error: "Código requerido" });
+  }
+
+  db.query(
+    `SELECT * FROM codigos_verificacion 
+     WHERE user_id = ? AND codigo = ? AND expires_at > NOW() AND usado = FALSE`,
+    [userId, codigo],
+    async (err, result) => {
+      if (err || result.length === 0) {
+        return res.status(401).json({ error: "Código inválido o expirado" });
+      }
+
+      // Marcar código como usado
+      db.query("UPDATE codigos_verificacion SET usado = TRUE WHERE id = ?", [result[0].id]);
+
+      // Obtener datos del usuario
+      db.query("SELECT * FROM usuarios WHERE id = ?", [userId], async (err, userResult) => {
+        if (err || userResult.length === 0) {
+          return res.status(500).json({ error: "Error al obtener usuario" });
+        }
+
+        const usuario = userResult[0];
+
+        // Limpiar tokens antiguos
+        db.query("DELETE FROM refresh_tokens WHERE user_id = ?", [usuario.id]);
+        db.query("DELETE FROM sesiones WHERE user_id = ?", [usuario.id]);
+
+        // Generar ACCESS TOKEN (24 horas)
+        const accessToken = jwt.sign(
+          { id: usuario.id, rol: usuario.rol, nombre: usuario.nombre, email: usuario.email },
+          SECRET,
+          { expiresIn: "24h" }
+        );
+
+        // Generar REFRESH TOKEN (30 días)
+        const refreshToken = jwt.sign(
+          { id: usuario.id },
+          SECRET,
+          { expiresIn: "30d" }
+        );
+
+        // Guardar tokens
+        db.query(
+          "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))",
+          [usuario.id, refreshToken]
+        );
+
+        db.query(
+          "INSERT INTO sesiones (user_id, token, ip, user_agent) VALUES (?, ?, ?, ?)",
+          [usuario.id, accessToken, req.ip || "0.0.0.0", req.headers["user-agent"] || "unknown"],
+          (err) => {
+            if (err) {
+              console.error("Error guardando sesión:", err);
+              return res.status(500).json({ error: "Error al iniciar sesión" });
+            }
+
+            // Enviar notificación de inicio de sesión
+            const htmlNotificacion = `
+              <div style="font-family: Arial, sans-serif; max-width: 600px;">
+                <h2 style="color: #4CAF50;">✅ Nuevo inicio de sesión</h2>
+                <p>Hola <strong>${usuario.nombre}</strong>,</p>
+                <p>Se ha iniciado sesión en tu cuenta.</p>
+                <p><strong>Detalles:</strong></p>
+                <ul>
+                  <li>📅 Fecha: ${new Date().toLocaleString()}</li>
+                  <li>🌐 IP: ${req.ip || "Desconocida"}</li>
+                </ul>
+                <p>Si no fuiste tú, cambia tu contraseña inmediatamente.</p>
+                <hr>
+                <p style="font-size: 12px;">Refugio de Animales 🐾</p>
+              </div>
+            `;
+            
+            enviarCorreo(usuario.email, "✅ Nuevo inicio de sesión", "Se ha iniciado sesión en tu cuenta", htmlNotificacion);
+
+            res.json({
+              success: true,
+              accessToken,
+              refreshToken,
+              usuario: {
+                id: usuario.id,
+                email: usuario.email,
+                rol: usuario.rol,
+                nombre: usuario.nombre
+              }
+            });
+          }
+        );
+      });
+    }
+  );
+});
+
+// ===============================
+// LOGOUT
+// ===============================
+router.post("/logout", (req, res) => {
+  const { refreshToken } = req.body;
+  const token = req.headers.authorization?.split(" ")[1];
+
+  if (refreshToken) db.query("DELETE FROM refresh_tokens WHERE token = ?", [refreshToken]);
+  if (token) db.query("DELETE FROM sesiones WHERE token = ?", [token]);
+
+  res.json({ mensaje: "Logout completo" });
+});
+
+// ===============================
+// REFRESH TOKEN
+// ===============================
 router.post("/refresh", (req, res) => {
   const { refreshToken } = req.body;
   if (!refreshToken) {
@@ -177,22 +312,9 @@ router.post("/refresh", (req, res) => {
   );
 });
 
-/* ===============================
-   LOGOUT
-================================ */
-router.post("/logout", (req, res) => {
-  const { refreshToken } = req.body;
-  const token = req.headers.authorization?.split(" ")[1];
-
-  if (refreshToken) db.query("DELETE FROM refresh_tokens WHERE token = ?", [refreshToken]);
-  if (token) db.query("DELETE FROM sesiones WHERE token = ?", [token]);
-
-  res.json({ mensaje: "Logout completo" });
-});
-
-/* ===============================
-   VALIDAR TOKEN
-================================ */
+// ===============================
+// VALIDAR TOKEN
+// ===============================
 router.get("/token/validar", auth, (req, res) => {
   if (!req.usuario) {
     return res.status(401).json({ error: "No autorizado" });
@@ -200,9 +322,9 @@ router.get("/token/validar", auth, (req, res) => {
   res.json({ mensaje: "Token válido", usuario: req.usuario });
 });
 
-/* ===============================
-   SESIONES
-================================ */
+// ===============================
+// SESIONES (ADMIN)
+// ===============================
 router.get("/sessions", auth, role("admin"), (req, res) => {
   const sql = `
     SELECT sesiones.id, sesiones.ip, sesiones.user_agent,
@@ -217,9 +339,9 @@ router.get("/sessions", auth, role("admin"), (req, res) => {
   });
 });
 
-/* ===============================
-   BLOQUEAR USUARIO
-================================ */
+// ===============================
+// BLOQUEAR USUARIO (ADMIN)
+// ===============================
 router.put("/bloquear/:id", auth, role("admin"), (req, res) => {
   const userId = req.params.id;
   db.query("UPDATE usuarios SET activo = 0 WHERE id = ?", [userId], (err) => {
@@ -231,9 +353,9 @@ router.put("/bloquear/:id", auth, role("admin"), (req, res) => {
   });
 });
 
-/* ===============================
-   LISTAR USUARIOS
-================================ */
+// ===============================
+// LISTAR USUARIOS (ADMIN)
+// ===============================
 router.get("/todos", auth, role("admin"), (req, res) => {
   db.query("SELECT id, nombre, email, activo, rol FROM usuarios", (err, results) => {
     if (err) return res.status(500).json({ mensaje: "Error" });

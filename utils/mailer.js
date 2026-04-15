@@ -19,6 +19,11 @@ const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
  */
 const enviarCorreo = async (para, asunto, texto, html = null) => {
     try {
+        // Validar que el email del remitente está configurado
+        if (!process.env.EMAIL_USER) {
+            throw new Error("EMAIL_USER no está configurado en variables de entorno");
+        }
+
         const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
         sendSmtpEmail.to = [{ email: para }];
         sendSmtpEmail.sender = { 
@@ -33,11 +38,12 @@ const enviarCorreo = async (para, asunto, texto, html = null) => {
             sendSmtpEmail.textContent = texto;
         }
 
+        console.log(`📧 Intentando enviar email a: ${para}`);
         const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
-        console.log("✅ Correo enviado a:", para);
+        console.log(`✅ Correo enviado a: ${para} - Message ID: ${response.messageId}`);
         return { success: true, messageId: response.messageId };
     } catch (error) {
-        console.error("❌ Error Brevo:", error.response?.body || error);
+        console.error("❌ Error Brevo:", error.response?.body || error.message);
         return { success: false, error: error.response?.body || error.message };
     }
 };
