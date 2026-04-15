@@ -113,7 +113,7 @@ router.post(
             return res.status(500).json({ error: "Error al generar código" });
           }
 
-          // Enviar email con el código
+          // Preparar email HTML
           const htmlCodigo = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
               <h2 style="color: #4CAF50;">🔐 Código de verificación</h2>
@@ -146,12 +146,13 @@ Refugio de Animales 🐾
           `;
 
           console.log("📧 Enviando código a:", email);
-          console.log("🔑 CÓDIGO:", codigo);
           
+          // ENVIAR EL EMAIL
           const resultado = await enviarCorreo(email, "🔐 Código de verificación", textoPlano, htmlCodigo);
           
           if (resultado.success) {
             console.log("✅ Código enviado exitosamente a:", email);
+            // IMPORTANTE: NO devolvemos el código en la respuesta
             res.json({ 
               mensaje: "Código enviado a tu correo",
               userId: usuario.id,
@@ -159,7 +160,7 @@ Refugio de Animales 🐾
             });
           } else {
             console.error("❌ Error al enviar email:", resultado.error);
-            res.status(500).json({ error: "Error al enviar el código por email" });
+            res.status(500).json({ error: "Error al enviar el código por email. Intenta nuevamente." });
           }
         }
       );
