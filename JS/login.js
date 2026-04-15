@@ -64,6 +64,25 @@ function configurarElementos() {
 async function enviarCredenciales(event) {
     event.preventDefault();
     
+    // ✅ VALIDAR CAPTCHA
+    const captchaInput = document.getElementById("captchaInput");
+    const captchaResultado = document.getElementById("captchaResultado");
+    
+    if (!captchaInput || !captchaResultado) {
+        mostrarNotificacion("Error con el captcha. Recarga la página.", "error");
+        return;
+    }
+    
+    if (parseInt(captchaInput.value) !== parseInt(captchaResultado.value)) {
+        mostrarNotificacion("❌ Captcha incorrecto. Intenta nuevamente.", "error");
+        // Regenerar captcha si existe la función
+        if (typeof generarCaptcha === "function") {
+            generarCaptcha();
+        }
+        captchaInput.value = "";
+        return;
+    }
+    
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
     
