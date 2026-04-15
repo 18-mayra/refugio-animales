@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="CSS/styles.css">
     <link rel="stylesheet" href="CSS/base.css">
     <link rel="stylesheet" href="CSS/animations.css">
-    <link rel="stylesheet" href="CSS/login.css">
 </head>
 <body>
 
@@ -38,47 +37,45 @@
 
         <!-- SECCIÓN DE LOGIN (PASO 1) -->
         <div id="loginSection">
-            <form id="loginForm">
-                <input type="email" id="email" placeholder="Correo electrónico" required>
-                
-                <div class="password-container">
-                    <input type="password" id="password" placeholder="Contraseña" required>
-                    <button type="button" class="toggle-password" id="togglePasswordBtn">👁️</button>
-                </div>
+            <div class="captcha-container">
+                <label>Verificación: ¿Cuánto es <span id="captchaNum1">5</span> + <span id="captchaNum2">3</span>?</label>
+                <input type="number" id="captchaInput" placeholder="Escribe el resultado" required>
+                <input type="hidden" id="captchaResultado" value="8">
+            </div>
 
-                <!-- CAPTCHA ALEATORIO -->
-                <div class="captcha-container">
-                    <label>Verificación: ¿Cuánto es <span id="captchaNum1">5</span> + <span id="captchaNum2">3</span>?</label>
-                    <input type="number" id="captchaInput" placeholder="Escribe el resultado" required>
-                    <input type="hidden" id="captchaResultado" value="8">
-                </div>
+            <input type="email" id="email" placeholder="Correo electrónico" required>
+            
+            <div class="password-container">
+                <input type="password" id="password" placeholder="Contraseña" required>
+                <button type="button" class="toggle-password" id="togglePasswordBtn">👁️</button>
+            </div>
 
-                <button type="submit" id="loginBtn">Ingresar</button>
-            </form>
+            <!-- ✅ BOTÓN CON onclick DIRECTAMENTE -->
+            <button type="button" id="loginBtn" onclick="enviarCredenciales()">Ingresar</button>
 
             <p>¿No tienes cuenta? <a href="registro.html">Registrarse</a></p>
             <p><a href="recuperar.html" class="forgot-password">¿Olvidaste tu contraseña?</a></p>
         </div>
 
-        <!-- SECCIÓN DEL CÓDIGO (PASO 2 - aparece después de enviar email) -->
+        <!-- SECCIÓN DEL CÓDIGO (PASO 2) -->
         <div id="codigoSection" style="display: none;">
             <div class="codigo-section">
                 <div class="user-email">
                     📧 Código enviado a: <strong id="userEmail"></strong>
                 </div>
                 
-                <form id="codigoForm">
-                    <input type="text" id="codigo" class="codigo-input" 
-                           placeholder="000000" maxlength="6" autocomplete="off">
-                    <button type="submit" class="btn" id="verificarBtn">VERIFICAR CÓDIGO</button>
-                </form>
+                <input type="text" id="codigo" class="codigo-input" 
+                       placeholder="000000" maxlength="6" autocomplete="off">
+                
+                <!-- ✅ BOTÓN CON onclick DIRECTAMENTE -->
+                <button type="button" class="btn" id="verificarBtn" onclick="verificarCodigo()">VERIFICAR CÓDIGO</button>
                 
                 <div class="timer">
                     ⏱️ Tiempo restante: <span id="timer">10:00</span>
                 </div>
                 
-                <button type="button" class="btn-secondary" id="reenviarCodigo" disabled>Reenviar código</button>
-                <button type="button" class="btn-secondary" id="volverLoginBtn">Volver</button>
+                <button type="button" class="btn-secondary" id="reenviarCodigo" onclick="reenviarCodigo()" disabled>Reenviar código</button>
+                <button type="button" class="btn-secondary" onclick="volverALogin()" style="margin-top: 10px;">Volver</button>
             </div>
         </div>
     </div>
