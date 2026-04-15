@@ -6,12 +6,12 @@ let tiempoRestante = 0;
 let intervaloReloj = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Limpiar cualquier sesión anterior para pruebas
-    // localStorage.clear(); // Descomenta para probar
-    
+
     const token = localStorage.getItem("accessToken");
+
     if (token) {
         const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+
         if (usuario.rol === "admin" || usuario.rol === "superadmin") {
             window.location.href = "/admin.html";
         } else {
@@ -19,26 +19,22 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         return;
     }
-    
+
     generarCaptcha();
-    
+
     document.getElementById("loginBtn").onclick = enviarCredenciales;
     document.getElementById("verificarBtn").onclick = verificarCodigo;
     document.getElementById("reenviarCodigo").onclick = reenviarCodigo;
     document.getElementById("volverLoginBtn").onclick = volverALogin;
-    
-    const toggleBtn = document.getElementById("togglePasswordBtn");
-    if (toggleBtn) {
-        toggleBtn.onclick = () => {
-            const pwd = document.getElementById("password");
-            pwd.type = pwd.type === "password" ? "text" : "password";
-        };
-    }
 });
 
+// ===============================
+// CAPTCHA
+// ===============================
 function generarCaptcha() {
     const num1 = Math.floor(Math.random() * 10) + 1;
     const num2 = Math.floor(Math.random() * 10) + 1;
+
     document.getElementById("captchaNum1").textContent = num1;
     document.getElementById("captchaNum2").textContent = num2;
     document.getElementById("captchaResultado").value = num1 + num2;
@@ -47,179 +43,149 @@ function generarCaptcha() {
 function validarCaptcha() {
     const input = document.getElementById("captchaInput").value;
     const resultado = document.getElementById("captchaResultado").value;
+
     if (parseInt(input) !== parseInt(resultado)) {
-        mostrarNotificacion("Captcha incorrecto", "error");
+        alert("Captcha incorrecto");
         generarCaptcha();
-        document.getElementById("captchaInput").value = "";
         return false;
     }
     return true;
 }
 
-function mostrarNotificacion(mensaje, tipo) {
-    const notif = document.createElement("div");
-    notif.className = `notificacion ${tipo}`;
-    notif.textContent = mensaje;
-    document.body.appendChild(notif);
-    setTimeout(() => notif.remove(), 3000);
-}
-
+// ===============================
+// LOGIN - ENVIAR CÓDIGO
+// ===============================
 async function enviarCredenciales() {
     if (!validarCaptcha()) return;
-    
+
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
-    
-    if (!email || !password) {
-        mostrarNotificacion("Completa todos los campos", "error");
+
+    const response = await fetch(`${API_BASE_URL}/api/usuarios/login/enviar-codigo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        alert(data.mensaje || "Error login");
         return;
     }
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/usuarios/login/enviar-codigo`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.mensaje || data.error || "Error en login");
-        }
-        
-        userIdGlobal = data.userId;
-        
-        document.getElementById("loginSection").style.display = "none";
-        document.getElementById("codigoSection").style.display = "block";
-        document.getElementById("userEmail").textContent = email;
-        
-        iniciarTemporizador(600);
-        mostrarNotificacion("Código enviado al correo", "exito");
-        
-    } catch (error) {
-        console.error(error);
-        mostrarNotificacion(error.message, "error");
-    }
+
+    userIdGlobal = data.userId;
+
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("codigoSection").style.display = "block";
+
+    iniciarTemporizador(600);
+
+    alert("Código enviado al correo");
 }
 
+// ===============================
+// VERIFICAR CÓDIGO
+// ===============================
 async function verificarCodigo() {
     const codigo = document.getElementById("codigo").value.trim();
-    
-    if (!codigo || codigo.length !== 6) {
-        mostrarNotificacion("Código inválido", "error");
-        return;
-    }
-    
+
     if (!userIdGlobal) {
-        mostrarNotificacion("Error de sesión", "error");
-        volverALogin();
+        alert("Error de sesión");
         return;
     }
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/usuarios/login/verificar-codigo`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: userIdGlobal, codigo })
-        });
-        
-        const data = await response.json();
-        
-        console.log("📦 Respuesta del servidor:", data);
-        
-        if (!response.ok) {
-            throw new Error(data.error || "Error al verificar código");
-        }
-        
-        // ✅ GUARDAR TOKEN
-        if (data.accessToken) {
-            localStorage.setItem("accessToken", data.accessToken);
-            console.log("✅ Token guardado:", data.accessToken.substring(0, 50) + "...");
-        } else {
-            console.error("❌ No hay accessToken en la respuesta");
-        }
-        
-        if (data.refreshToken) {
-            localStorage.setItem("refreshToken", data.refreshToken);
-        }
-        
-        if (data.usuario) {
-            localStorage.setItem("usuario", JSON.stringify(data.usuario));
-            console.log("✅ Usuario guardado:", data.usuario);
-        }
-        
-        mostrarNotificacion("Login exitoso", "exito");
-        
-        // ✅ REDIRECCIÓN SEGÚN ROL
-        setTimeout(() => {
-            const rol = data.usuario?.rol || "";
-            console.log("👑 Redirigiendo con rol:", rol);
-            if (rol === "admin" || rol === "superadmin") {
-                window.location.href = "/admin.html";
-            } else {
-                window.location.href = "/";
-            }
-        }, 1000);
-        
-    } catch (error) {
-        console.error(error);
-        mostrarNotificacion(error.message, "error");
+
+    const response = await fetch(`${API_BASE_URL}/api/usuarios/login/verificar-codigo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            userId: userIdGlobal,
+            codigo
+        })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        alert(data.error || "Error");
+        return;
     }
+
+    // ===============================
+    // 🔥 GUARDAR SESIÓN (IMPORTANTE)
+    // ===============================
+    localStorage.setItem("accessToken", data.accessToken);
+    localStorage.setItem("usuario", JSON.stringify(data.usuario));
+
+    alert("Login exitoso");
+
+    const rol = data.usuario.rol;
+
+    setTimeout(() => {
+        if (rol === "admin" || rol === "superadmin") {
+            window.location.href = "/admin.html";
+        } else {
+            window.location.href = "/";
+        }
+    }, 800);
 }
 
+// ===============================
+// REENVIAR CÓDIGO
+// ===============================
 async function reenviarCodigo() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/usuarios/login/enviar-codigo`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) throw new Error(data.mensaje || "Error");
-        
-        userIdGlobal = data.userId;
-        if (intervaloReloj) clearInterval(intervaloReloj);
-        iniciarTemporizador(600);
-        mostrarNotificacion("Código reenviado", "exito");
-        
-    } catch (error) {
-        mostrarNotificacion(error.message, "error");
+
+    const response = await fetch(`${API_BASE_URL}/api/usuarios/login/enviar-codigo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        alert(data.mensaje || "Error");
+        return;
     }
+
+    userIdGlobal = data.userId;
+
+    iniciarTemporizador(600);
+
+    alert("Código reenviado");
 }
 
+// ===============================
+// TIMER
+// ===============================
 function iniciarTemporizador(segundos) {
     tiempoRestante = segundos;
+
     if (intervaloReloj) clearInterval(intervaloReloj);
+
     intervaloReloj = setInterval(() => {
+        tiempoRestante--;
+
+        const minutos = Math.floor(tiempoRestante / 60);
+        const segundos = tiempoRestante % 60;
+
+        document.getElementById("timer").textContent =
+            `${minutos}:${segundos.toString().padStart(2, "0")}`;
+
         if (tiempoRestante <= 0) {
             clearInterval(intervaloReloj);
             document.getElementById("timer").textContent = "Expirado";
-            document.getElementById("reenviarCodigo").disabled = false;
-        } else {
-            tiempoRestante--;
-            actualizarTimer();
         }
     }, 1000);
-    actualizarTimer();
 }
 
-function actualizarTimer() {
-    const minutos = Math.floor(tiempoRestante / 60);
-    const segundos = tiempoRestante % 60;
-    document.getElementById("timer").textContent = `${minutos}:${segundos.toString().padStart(2, "0")}`;
-}
-
+// ===============================
 function volverALogin() {
-    if (intervaloReloj) clearInterval(intervaloReloj);
+    clearInterval(intervaloReloj);
     userIdGlobal = null;
+
     document.getElementById("codigoSection").style.display = "none";
     document.getElementById("loginSection").style.display = "block";
-    document.getElementById("codigo").value = "";
-    generarCaptcha();
 }
