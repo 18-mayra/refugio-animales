@@ -2,7 +2,7 @@
 
 if (!window.API) {
 
-    const BASE_URL = "https://refugio-animales.onrender.com";
+    const BASE_URL = window.location.origin; // ✅ Usar URL dinámica
     let csrfToken = null;
 
     const API = {
@@ -16,7 +16,7 @@ if (!window.API) {
                 const data = await res.json();
                 csrfToken = data.csrfToken;
 
-                console.log("🔐 CSRF Token:", csrfToken);
+                console.log("🔐 CSRF Token obtenido");
                 return csrfToken;
 
             } catch (error) {
@@ -27,17 +27,18 @@ if (!window.API) {
 
         async request(url, options = {}) {
 
-            const token = localStorage.getItem("token");
+            // ✅ CORREGIDO: usar 'accessToken' en lugar de 'token'
+            const token = localStorage.getItem("accessToken");
             const method = options.method || "GET";
 
-            // 🔥 SOLO pedir CSRF si no es GET
+            // Solo pedir CSRF si no es GET
             if (!csrfToken && method !== "GET") {
                 await this.getCSRF();
             }
 
             const headers = {
                 "Content-Type": "application/json",
-                "Authorization": token ? "Bearer " + token : ""
+                ...(token && { "Authorization": `Bearer ${token}` })
             };
 
             if (method !== "GET" && csrfToken) {
@@ -46,7 +47,7 @@ if (!window.API) {
 
             const config = {
                 method,
-                credentials: "include", // 🔥 IMPORTANTE
+                credentials: "include",
                 headers
             };
 
@@ -56,7 +57,7 @@ if (!window.API) {
 
             let res = await fetch(BASE_URL + url, config);
 
-            // 🔁 Reintento si falla CSRF
+            // Reintento si falla CSRF
             if (res.status === 403 && method !== "GET") {
                 console.warn("⚠️ CSRF inválido, regenerando...");
                 await this.getCSRF();
@@ -64,6 +65,16 @@ if (!window.API) {
                     config.headers["CSRF-Token"] = csrfToken;
                 }
                 res = await fetch(BASE_URL + url, config);
+            }
+
+            // ✅ Manejo de 401 sin borrar toda la sesión
+            if (res.status === 401) {
+                console.warn("⚠️ Token inválido o expirado");
+                localStorage.removeItem("accessToken");
+                localStorage.removeItem("refreshToken");
+                localStorage.removeItem("usuario");
+                window.location.href = "/login.html";
+                throw new Error("Sesión expirada");
             }
 
             const text = await res.text();
