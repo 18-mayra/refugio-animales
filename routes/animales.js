@@ -1,10 +1,11 @@
+// routes/animales.js - Versión CORREGIDA (sin depender de roleMiddleware)
+
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
 
 // 🔐 MIDDLEWARES
 const auth = require("../middlewares/authMiddleware");
-const role = require("../middlewares/roleMiddleware");
 
 /* ======================
    OBTENER TODOS (PÚBLICO)
@@ -107,9 +108,15 @@ router.get("/:id", (req, res) => {
 });
 
 /* ======================
-   AGREGAR (SOLO ADMIN)
+   AGREGAR (SOLO ADMIN) - Verificación manual
 ====================== */
-router.post("/", auth, role("admin"), (req, res) => {
+router.post("/", auth, (req, res) => {
+    // ✅ Verificar rol manualmente
+    if (req.usuario?.rol !== "admin" && req.usuario?.rol !== "superadmin") {
+        console.log("❌ Usuario no autorizado:", req.usuario?.rol);
+        return res.status(403).json({ error: "No tienes permisos de administrador" });
+    }
+    
     const { tipo, nombre, edad, raza, comportamiento, vacunas, enfermedades, descripcion, estado, imagen_url } = req.body;
     
     console.log("📝 Creando animal por admin:", req.usuario?.nombre);
@@ -147,9 +154,15 @@ router.post("/", auth, role("admin"), (req, res) => {
 });
 
 /* ======================
-   EDITAR (SOLO ADMIN)
+   EDITAR (SOLO ADMIN) - Verificación manual
 ====================== */
-router.put("/:id", auth, role("admin"), (req, res) => {
+router.put("/:id", auth, (req, res) => {
+    // ✅ Verificar rol manualmente
+    if (req.usuario?.rol !== "admin" && req.usuario?.rol !== "superadmin") {
+        console.log("❌ Usuario no autorizado:", req.usuario?.rol);
+        return res.status(403).json({ error: "No tienes permisos de administrador" });
+    }
+    
     const id = parseInt(req.params.id);
     
     if (isNaN(id)) {
@@ -174,9 +187,18 @@ router.put("/:id", auth, role("admin"), (req, res) => {
 });
 
 /* ======================
-   ELIMINAR (SOLO ADMIN)
+   ELIMINAR (SOLO ADMIN) - Verificación manual
 ====================== */
-router.delete("/:id", auth, role("admin"), (req, res) => {
+router.delete("/:id", auth, (req, res) => {
+    // ✅ Verificar rol manualmente
+    console.log("🔍 DELETE - Usuario autenticado:", req.usuario);
+    console.log("🔍 DELETE - Rol del usuario:", req.usuario?.rol);
+    
+    if (req.usuario?.rol !== "admin" && req.usuario?.rol !== "superadmin") {
+        console.log("❌ Usuario no autorizado para eliminar. Rol actual:", req.usuario?.rol);
+        return res.status(403).json({ error: "No tienes permisos de administrador" });
+    }
+    
     const id = parseInt(req.params.id);
     
     if (isNaN(id)) {
@@ -185,7 +207,6 @@ router.delete("/:id", auth, role("admin"), (req, res) => {
     
     console.log("🗑️ Eliminando animal ID:", id);
     console.log("👤 Usuario que elimina:", req.usuario?.nombre);
-    console.log("👑 Rol del usuario:", req.usuario?.rol);
     
     db.query("SELECT id FROM animales WHERE id = ?", [id], (err, rows) => {
         if (err) {

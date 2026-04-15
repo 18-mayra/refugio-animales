@@ -235,14 +235,14 @@ app.get("/api/verificar-admin", auth, (req, res) => {
 // 📦 RUTAS API
 // =============================
 
-// Rutas públicas de animales (GET)
+// 1. Rutas públicas (GET de animales)
 app.use("/animales", animalesRoutes);
 
-// ✅ Rutas de ADMIN (requieren rol admin)
-app.use("/admin/animales", auth, role("admin"), animalesRoutes);
-app.use("/api/admin", auth, role("admin"), adminRoutes);
+// 2. Rutas de ADMIN (solo requieren auth, la verificación de rol está dentro de animalesRoutes)
+app.use("/admin/animales", auth, animalesRoutes);
+app.use("/api/admin", auth, adminRoutes);
 
-// Rutas con autenticación básica
+// 3. Rutas con autenticación básica
 app.use("/api/adopciones", auth, adopcionesRoutes);
 app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/password", passwordRoutes);
