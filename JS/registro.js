@@ -50,12 +50,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            await window.API.registro(nombre, email, password);
+            // ✅ CORREGIDO: pasar como objeto, no como parámetros separados
+            await window.API.registro({ nombre, email, password });
             alert("✅ Registro exitoso. Ahora puedes iniciar sesión.");
             window.location.href = "login.html";
         } catch (error) {
             console.error("❌ ERROR:", error);
-            alert(error.message);
+            alert("❌ Error al registrar: " + error.message);
             if (submitBtn) {
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;

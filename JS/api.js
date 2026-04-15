@@ -1,8 +1,8 @@
-// api.js - Cliente API para Refugio de Animales (CORREGIDO)
+// api.js - Cliente API para Refugio de Animales
 
 if (!window.API) {
 
-    const BASE_URL = window.location.origin; // ✅ Usar URL dinámica
+    const BASE_URL = window.location.origin;
     let csrfToken = null;
 
     const API = {
@@ -12,13 +12,10 @@ if (!window.API) {
                 const res = await fetch(BASE_URL + "/api/csrf-token", {
                     credentials: "include"
                 });
-
                 const data = await res.json();
                 csrfToken = data.csrfToken;
-
                 console.log("🔐 CSRF Token obtenido");
                 return csrfToken;
-
             } catch (error) {
                 console.error("❌ Error obteniendo CSRF:", error);
                 return null;
@@ -26,12 +23,9 @@ if (!window.API) {
         },
 
         async request(url, options = {}) {
-
-            // ✅ CORREGIDO: usar 'accessToken' en lugar de 'token'
             const token = localStorage.getItem("accessToken");
             const method = options.method || "GET";
 
-            // Solo pedir CSRF si no es GET
             if (!csrfToken && method !== "GET") {
                 await this.getCSRF();
             }
@@ -57,7 +51,6 @@ if (!window.API) {
 
             let res = await fetch(BASE_URL + url, config);
 
-            // Reintento si falla CSRF
             if (res.status === 403 && method !== "GET") {
                 console.warn("⚠️ CSRF inválido, regenerando...");
                 await this.getCSRF();
@@ -67,7 +60,6 @@ if (!window.API) {
                 res = await fetch(BASE_URL + url, config);
             }
 
-            // ✅ Manejo de 401 sin borrar toda la sesión
             if (res.status === 401) {
                 console.warn("⚠️ Token inválido o expirado");
                 localStorage.removeItem("accessToken");
@@ -78,7 +70,6 @@ if (!window.API) {
             }
 
             const text = await res.text();
-
             let data;
             try {
                 data = JSON.parse(text);
@@ -90,6 +81,23 @@ if (!window.API) {
                 throw new Error(data.error || data.mensaje || "Error en API");
             }
 
+            return data;
+        },
+
+        // ✅ REGISTRO DE USUARIO (NUEVO)
+        async registro(usuarioData) {
+            const res = await fetch(`${BASE_URL}/api/usuarios/registro`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(usuarioData)
+            });
+            
+            const data = await res.json();
+            
+            if (!res.ok) {
+                throw new Error(data.mensaje || data.error || "Error en registro");
+            }
+            
             return data;
         },
 
