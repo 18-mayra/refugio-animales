@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contáctanos - Refugio</title>
+    <link rel="stylesheet" href="CSS/styles.css">
+    <link rel="stylesheet" href="CSS/base.css">
+    <link rel="stylesheet" href="CSS/animations.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+<header>
+    <nav class="menu" aria-label="Menú principal">
+        <div class="logo">🐾 Refugio</div>
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <ul class="menu-links" id="menuLinks">
+            <li><a href="index.html">Inicio</a></li>
+            <li class="submenu">
+                <button class="submenu-btn">Catálogo ▾</button>
+                <ul class="submenu-links">
+                    <li><a href="perros.html">Perros</a></li>
+                    <li><a href="gatos.html">Gatos</a></li>
+                </ul>
+            </li>
+            <li><a href="galeria.html">Galería</a></li>
+            <li><a href="contactanos.html" class="active">Contáctanos</a></li>
+            <li><a href="refugio.html">Sobre el Refugio</a></li>
+            <li class="login" id="authLink"></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <section class="contacto-header">
+        <h1>📞 Contáctanos</h1>
+        <p>Estamos aquí para ayudarte y responder tus preguntas</p>
+    </section>
+
+    <div class="contacto-grid">
+        <div class="contacto-info">
+            <div class="info-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <div>
+                    <h3>Dirección</h3>
+                    <p>Calle Principal #123, Aguascalientes</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-phone"></i>
+                <div>
+                    <h3>Teléfono</h3>
+                    <p>(449) 123-4567</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-envelope"></i>
+                <div>
+                    <h3>Email</h3>
+                    <p>refugio@animales.com</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-clock"></i>
+                <div>
+                    <h3>Horario</h3>
+                    <p>Lun-Vie: 9am - 6pm<br>Sáb: 10am - 2pm</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="contacto-form">
+            <h2>📩 Envíanos un mensaje</h2>
+            <form id="formContacto">
+                <input type="text" id="nombre" placeholder="Tu nombre completo" required>
+                <input type="email" id="email" placeholder="Tu correo electrónico" required>
+                <input type="tel" id="telefono" placeholder="Tu teléfono">
+                <textarea id="mensaje" placeholder="Escribe tu mensaje aquí..." rows="5" required></textarea>
+                <button type="submit">🐾 Enviar mensaje</button>
+            </form>
+            <div id="respuesta" style="text-align:center; margin-top:20px;"></div>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <div class="footer-content">
+        <div class="footer-section">
+            <h3>🐾 Refugio de Animales</h3>
+            <p>Dándoles una segunda oportunidad</p>
+        </div>
+        <div class="footer-section">
+            <h3>Contacto</h3>
+            <p>📞 (449) 123-4567</p>
+            <p>✉️ refugio@animales.com</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2026 Refugio de Animales</p>
+    </div>
+</footer>
+
+<script src="JS/api.js"></script>
+<script src="JS/auth.js"></script>
+<script src="JS/menu.js"></script>
+<script src="JS/contactanos.js"></script>
+</body>
+</html>

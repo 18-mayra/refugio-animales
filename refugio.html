@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sobre el Refugio - Refugio de Animales</title>
+    <link rel="stylesheet" href="CSS/styles.css">
+    <link rel="stylesheet" href="CSS/base.css">
+    <link rel="stylesheet" href="CSS/animations.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+    <header>
+        <nav class="menu" aria-label="Menú principal">
+            <div class="logo">🐾 Refugio</div>
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
+            <ul class="menu-links" id="menuLinks">
+                <li><a href="index.html">Inicio</a></li>
+                <li class="submenu">
+                    <button class="submenu-btn">Catálogo ▾</button>
+                    <ul class="submenu-links">
+                        <li><a href="perros.html">🐕 Perros</a></li>
+                        <li><a href="gatos.html">🐈 Gatos</a></li>
+                    </ul>
+                </li>
+                <li><a href="galeria.html">Galería</a></li>
+                <li><a href="contactanos.html">Contáctanos</a></li>
+                <li><a href="refugio.html" class="active">Sobre el Refugio</a></li>
+                <li class="login" id="authLink"></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="pagina-header">
+            <h1>🐾 Sobre el Refugio</h1>
+            <p>Conoce nuestra historia, misión y valores</p>
+        </section>
+
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li aria-current="page">Sobre el Refugio</li>
+            </ul>
+        </nav>
+
+        <div class="refugio-contenido">
+            <div class="refugio-card">
+                <i class="fas fa-heart"></i>
+                <h2>Nuestra Historia</h2>
+                <p>Nuestro refugio nace del amor hacia los animales y del deseo de brindarles una segunda oportunidad. Muchos perros y gatos llegan a nosotros después de haber sido abandonados o maltratados, y aquí encuentran un lugar seguro donde pueden sanar y volver a confiar.</p>
+                <p>Nos dedicamos a rescatarlos, cuidarlos, alimentarlos y prepararlos para encontrar un hogar lleno de amor. Cada adopción es una nueva historia, una nueva familia y una nueva vida.</p>
+            </div>
+
+            <div class="refugio-card">
+                <i class="fas fa-bullseye"></i>
+                <h2>Nuestra Misión</h2>
+                <p>Proteger y rescatar animales en situación de abandono, brindándoles cuidado, respeto y la oportunidad de ser adoptados por familias responsables que les brinden el amor que merecen.</p>
+            </div>
+
+            <div class="refugio-card">
+                <i class="fas fa-eye"></i>
+                <h2>Nuestra Visión</h2>
+                <p>Crear una comunidad donde todos los animales tengan un hogar digno y sean tratados con amor, respeto y dignidad. Ser un refugio modelo en el rescate y rehabilitación de animales.</p>
+            </div>
+
+            <div class="refugio-card">
+                <i class="fas fa-gem"></i>
+                <h2>Nuestros Valores</h2>
+                <ul>
+                    <li>❤️ Amor por los animales</li>
+                    <li>🤝 Respeto por la vida</li>
+                    <li>🎯 Responsabilidad</li>
+                    <li>🌟 Compromiso</li>
+                    <li>💪 Transparencia</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>🐾 Refugio de Animales</h3>
+                <p>Dándoles una segunda oportunidad</p>
+            </div>
+            <div class="footer-section">
+                <h3>Contacto</h3>
+                <p>📞 (449) 123-4567</p>
+                <p>✉️ refugio@animales.com</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Refugio de Animales</p>
+        </div>
+    </footer>
+
+    <script src="JS/api.js"></script>
+    <script src="JS/auth.js"></script>
+    <script src="JS/menu.js"></script>
+</body>
+</html>

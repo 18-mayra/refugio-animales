@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar Contraseña - Refugio</title>
+    <link rel="stylesheet" href="CSS/styles.css">
+    <link rel="stylesheet" href="CSS/base.css">
+    <link rel="stylesheet" href="CSS/animations.css">
+</head>
+<body>
+
+<header>
+    <nav class="menu" aria-label="Menú principal">
+        <div class="logo">🐾 Refugio</div>
+        <ul class="menu-links">
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="login.html">Iniciar Sesión</a></li>
+        </ul>
+    </nav>
+</header>
+
+<div class="login-wrapper">
+    <div class="login-container">
+        <h1>🔐 Recuperar Contraseña</h1>
+
+        <!-- PASO 1: Solicitar email -->
+        <div id="paso1">
+            <p>Ingresa tu correo electrónico y te enviaremos un código de 6 dígitos.</p>
+            <form id="formEmail">
+                <input type="email" id="email" placeholder="Correo electrónico" required>
+                <button type="submit">📧 Enviar código</button>
+            </form>
+        </div>
+
+        <!-- PASO 2: Ingresar código y nueva contraseña -->
+        <div id="paso2" style="display:none;">
+            <p>Ingresa el código de 6 dígitos que recibiste en tu correo y tu nueva contraseña.</p>
+            <form id="formReset">
+                <input type="text" id="codigo" placeholder="Código de 6 dígitos" maxlength="6" required>
+                <input type="password" id="nueva" placeholder="Nueva contraseña" required>
+                <input type="password" id="confirmar" placeholder="Confirmar contraseña" required>
+                <button type="submit">🔒 Restablecer contraseña</button>
+            </form>
+        </div>
+
+        <div id="mensaje" style="margin-top:20px; text-align:center;"></div>
+        <p><a href="login.html">← Volver al inicio de sesión</a></p>
+    </div>
+</div>
+
+<script src="JS/menu.js"></script>
+<script src="JS/api.js"></script>
+<script src="JS/auth.js"></script>
+<script src="JS/recuperar.js"></script>
+</body>
+</html>
