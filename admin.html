@@ -7,10 +7,7 @@
   <link rel="stylesheet" href="CSS/base.css">
   <link rel="stylesheet" href="CSS/animations.css">
   <style>
-    /* Estilos adicionales para el admin */
-    .menu-links .login {
-      margin-left: auto;
-    }
+    .menu-links .login { margin-left: auto; }
     .btn-cerrar-sesion {
       background: none;
       border: 1px solid white;
@@ -19,9 +16,7 @@
       border-radius: 5px;
       cursor: pointer;
     }
-    .btn-cerrar-sesion:hover {
-      background: rgba(255,255,255,0.2);
-    }
+    .btn-cerrar-sesion:hover { background: rgba(255,255,255,0.2); }
   </style>
 </head>
 <body class="admin-page">
@@ -29,7 +24,7 @@
 <header>
   <nav class="menu" aria-label="Menú principal">
     <div class="logo">🐾 Refugio Admin</div>
-    <ul class="menu-links" id="menuLinks">
+    <ul class="menu-links">
       <li><a href="index.html">Inicio</a></li>
       <li><a href="admin.html" class="active">Panel Admin</a></li>
       <li class="login" id="authLink"></li>
@@ -41,75 +36,38 @@
 <div class="admin-container">
 
 <h1>🐾 Panel de Administración</h1>
-
+<button id="btnCerrarSesion">🚪 Cerrar sesión</button>
 <hr>
 
 <form id="formAnimal" enctype="multipart/form-data">
   <input type="hidden" id="id">
-
   <label>Tipo:</label>
-  <select id="tipo">
-    <option value="Perro">Perro</option>
-    <option value="Gato">Gato</option>
-  </select><br><br>
-
-  <label>Nombre:</label>
-  <input type="text" id="nombre" required><br><br>
-
-  <label>Edad:</label>
-  <input type="number" id="edad"><br><br>
-
-  <label>Raza:</label>
-  <input type="text" id="raza"><br><br>
-
-  <label>Comportamiento:</label>
-  <input type="text" id="comportamiento"><br><br>
-
-  <label>Vacunas:</label>
-  <input type="text" id="vacunas"><br><br>
-
-  <label>Enfermedades:</label>
-  <input type="text" id="enfermedades"><br><br>
-
-  <label>Descripción:</label><br>
-  <textarea id="descripcion"></textarea><br><br>
-
+  <select id="tipo"><option value="Perro">Perro</option><option value="Gato">Gato</option></select><br><br>
+  <label>Nombre:</label><input type="text" id="nombre" required><br><br>
+  <label>Edad:</label><input type="number" id="edad"><br><br>
+  <label>Raza:</label><input type="text" id="raza"><br><br>
+  <label>Comportamiento:</label><input type="text" id="comportamiento"><br><br>
+  <label>Vacunas:</label><input type="text" id="vacunas"><br><br>
+  <label>Enfermedades:</label><input type="text" id="enfermedades"><br><br>
+  <label>Descripción:</label><textarea id="descripcion"></textarea><br><br>
   <label>Estado:</label>
-  <select id="estado">
-    <option value="Disponible">Disponible</option>
-    <option value="Adoptado">Adoptado</option>
-  </select><br><br>
-
+  <select id="estado"><option value="Disponible">Disponible</option><option value="Adoptado">Adoptado</option></select><br><br>
   <div class="form-group">
     <label>📸 Imagen del animal:</label>
     <input type="file" id="imagen" accept="image/*">
     <small>Formatos: JPG, PNG, GIF (máx 5MB)</small>
   </div>
-
   <button type="submit">💾 Guardar</button>
 </form>
 
 <hr>
-
 <h2>🔎 Buscar y Filtrar</h2>
 <input type="text" id="buscador" placeholder="Buscar por nombre o raza">
-
-<select id="filtroTipo">
-  <option value="">Todos los tipos</option>
-  <option value="Perro">Perros</option>
-  <option value="Gato">Gatos</option>
-</select>
-
-<select id="filtroEstado">
-  <option value="">Todos los estados</option>
-  <option value="Disponible">Disponibles</option>
-  <option value="Adoptado">Adoptados</option>
-</select>
-
+<select id="filtroTipo"><option value="">Todos los tipos</option><option value="Perro">Perros</option><option value="Gato">Gatos</option></select>
+<select id="filtroEstado"><option value="">Todos los estados</option><option value="Disponible">Disponibles</option><option value="Adoptado">Adoptados</option></select>
 <button id="btnFiltrar">🔍 Filtrar</button>
 
 <hr>
-
 <h2>📋 Listado de Animales</h2>
 <div id="listaAnimales"></div>
 
@@ -129,45 +87,31 @@
 <script src="JS/auth.js"></script>
 <script src="JS/admin.js"></script>
 
-<!-- 🔥 Script de verificación y cierre de sesión -->
 <script>
-  // Verificar sesión de admin
   (function() {
     const token = localStorage.getItem("accessToken");
     const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
     
-    console.log("🔍 Verificando admin en admin.html");
-    console.log("Token:", token ? "SÍ" : "NO");
-    console.log("Usuario:", usuario);
+    console.log("🔍 Verificando admin");
     
     if (!token) {
-      alert("Debes iniciar sesión");
       window.location.href = "/login.html";
       return;
     }
     
     if (usuario.rol !== "admin" && usuario.rol !== "superadmin") {
-      alert("Acceso solo para administradores");
       window.location.href = "/index.html";
       return;
     }
     
-    // Mostrar nombre del admin en el navbar
     const authLink = document.getElementById("authLink");
     if (authLink && usuario.nombre) {
-      authLink.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span>🐾 Hola, ${usuario.nombre}</span>
-          <button onclick="cerrarSesionAdmin()" class="btn-cerrar-sesion">Salir</button>
-        </div>
-      `;
+      authLink.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><span>🐾 Hola, ${usuario.nombre}</span><button onclick="cerrarSesionAdmin()" class="btn-cerrar-sesion">Salir</button></div>`;
     }
   })();
   
   function cerrarSesionAdmin() {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("usuario");
+    localStorage.clear();
     window.location.href = "/login.html";
   }
 </script>
