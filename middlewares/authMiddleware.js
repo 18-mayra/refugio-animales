@@ -1,4 +1,4 @@
-// 🔐 AUTH MIDDLEWARE - Verifica JWT correctamente
+//  AUTH MIDDLEWARE - Verifica JWT correctamente
 
 const jwt = require("jsonwebtoken");
 
