@@ -36,7 +36,7 @@ function getImagenUrl(imagenUrl) {
         return `${API_BASE_URL}${imagenUrl}`;
     }
     if (imagenUrl.startsWith('img/')) {
-        return `${API_BASE_URL}/${imagenUrl}`;  // ✅ Asegura la barra
+        return `${API_BASE_URL}/${imagenUrl}`;
     }
     if (imagenUrl.startsWith('http')) {
         return imagenUrl;
