@@ -174,10 +174,12 @@ Refugio de Animales 🐾
 );
 
 // ===============================
-// VERIFICAR CÓDIGO Y COMPLETAR LOGIN (PASO 2)
+// VERIFICAR CÓDIGO Y COMPLETAR LOGIN (PASO 2) - CORREGIDO CON LOGS
 // ===============================
 router.post("/login/verificar-codigo", async (req, res) => {
   const { userId, codigo } = req.body;
+
+  console.log("🔍 Verificando código para usuario:", userId, "Código:", codigo);
 
   if (!userId || !codigo) {
     return res.status(400).json({ error: "Código requerido" });
@@ -189,8 +191,11 @@ router.post("/login/verificar-codigo", async (req, res) => {
     [userId, codigo],
     async (err, result) => {
       if (err || result.length === 0) {
+        console.log("❌ Código inválido o expirado para usuario:", userId);
         return res.status(401).json({ error: "Código inválido o expirado" });
       }
+
+      console.log("✅ Código válido para usuario:", userId);
 
       // Marcar código como usado
       db.query("UPDATE codigos_verificacion SET usado = TRUE WHERE id = ?", [result[0].id]);
@@ -198,12 +203,15 @@ router.post("/login/verificar-codigo", async (req, res) => {
       // Obtener datos del usuario
       db.query("SELECT * FROM usuarios WHERE id = ?", [userId], async (err, userResult) => {
         if (err || userResult.length === 0) {
+          console.log("❌ Usuario no encontrado:", userId);
           return res.status(500).json({ error: "Error al obtener usuario" });
         }
 
         const usuario = userResult[0];
+        console.log("👤 Usuario encontrado:", usuario.id, usuario.email, "Rol:", usuario.rol);
 
         // Limpiar tokens antiguos
+        console.log("🧹 Limpiando tokens antiguos para usuario:", usuario.id);
         db.query("DELETE FROM refresh_tokens WHERE user_id = ?", [usuario.id]);
         db.query("DELETE FROM sesiones WHERE user_id = ?", [usuario.id]);
 
@@ -213,6 +221,7 @@ router.post("/login/verificar-codigo", async (req, res) => {
           SECRET,
           { expiresIn: "24h" }
         );
+        console.log("🔑 Access Token generado para usuario:", usuario.id);
 
         // Generar REFRESH TOKEN (30 días)
         const refreshToken = jwt.sign(
@@ -220,20 +229,60 @@ router.post("/login/verificar-codigo", async (req, res) => {
           SECRET,
           { expiresIn: "30d" }
         );
+        console.log("🔄 Refresh Token generado para usuario:", usuario.id);
 
-        // Guardar tokens
+        // Guardar refresh token
         db.query(
           "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))",
-          [usuario.id, refreshToken]
+          [usuario.id, refreshToken],
+          (err) => {
+            if (err) {
+              console.error("❌ Error guardando refresh token:", err);
+            } else {
+              console.log("✅ Refresh token guardado correctamente");
+            }
+          }
         );
+
+        // ============================================================
+        // 🔥 GUARDAR SESIÓN - CON LOGS DETALLADOS
+        // ============================================================
+        const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || "0.0.0.0";
+        const userAgent = req.headers["user-agent"] || "unknown";
+        
+        console.log(`📝 Guardando sesión para usuario ${usuario.id}:`);
+        console.log(`   - Token: ${accessToken.substring(0, 30)}...`);
+        console.log(`   - IP: ${ip}`);
+        console.log(`   - User-Agent: ${userAgent}`);
 
         db.query(
           "INSERT INTO sesiones (user_id, token, ip, user_agent) VALUES (?, ?, ?, ?)",
-          [usuario.id, accessToken, req.ip || "0.0.0.0", req.headers["user-agent"] || "unknown"],
+          [usuario.id, accessToken, ip, userAgent],
           (err) => {
             if (err) {
-              console.error("Error guardando sesión:", err);
-              return res.status(500).json({ error: "Error al iniciar sesión" });
+              console.error("❌ ERROR GRAVE guardando sesión:", err);
+              console.error("❌ Detalles del error:", err.sqlMessage);
+              console.error("❌ Código de error:", err.code);
+              
+              // ⚠️ No devolvemos error al usuario, pero registramos el error
+              // para que podamos depurar después
+            } else {
+              console.log("✅ Sesión guardada exitosamente para usuario:", usuario.id);
+              
+              // Verificar que se guardó
+              db.query(
+                "SELECT * FROM sesiones WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+                [usuario.id],
+                (err, result) => {
+                  if (err) {
+                    console.error("❌ Error verificando sesión:", err);
+                  } else if (result.length > 0) {
+                    console.log("✅ Verificación: Sesión encontrada en BD - ID:", result[0].id);
+                  } else {
+                    console.log("⚠️ Verificación: Sesión NO encontrada en BD");
+                  }
+                }
+              );
             }
 
             // Enviar notificación de inicio de sesión
@@ -245,7 +294,7 @@ router.post("/login/verificar-codigo", async (req, res) => {
                 <p><strong>Detalles:</strong></p>
                 <ul>
                   <li>📅 Fecha: ${new Date().toLocaleString()}</li>
-                  <li>🌐 IP: ${req.ip || "Desconocida"}</li>
+                  <li>🌐 IP: ${ip}</li>
                 </ul>
                 <p>Si no fuiste tú, cambia tu contraseña inmediatamente.</p>
                 <hr>
@@ -255,6 +304,8 @@ router.post("/login/verificar-codigo", async (req, res) => {
             
             enviarCorreo(usuario.email, "✅ Nuevo inicio de sesión", "Se ha iniciado sesión en tu cuenta", htmlNotificacion);
 
+            console.log("✅ Login completado exitosamente para usuario:", usuario.id);
+            
             res.json({
               success: true,
               accessToken,
@@ -279,6 +330,8 @@ router.post("/login/verificar-codigo", async (req, res) => {
 router.post("/logout", (req, res) => {
   const { refreshToken } = req.body;
   const token = req.headers.authorization?.split(" ")[1];
+
+  console.log("👋 Logout - Token:", token ? "SÍ" : "NO");
 
   if (refreshToken) db.query("DELETE FROM refresh_tokens WHERE token = ?", [refreshToken]);
   if (token) db.query("DELETE FROM sesiones WHERE token = ?", [token]);
@@ -340,7 +393,11 @@ router.get("/sessions", auth, role("admin"), (req, res) => {
     ORDER BY sesiones.id DESC
   `;
   db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ mensaje: "Error" });
+    if (err) {
+      console.error("❌ Error cargando sesiones:", err);
+      return res.status(500).json({ mensaje: "Error" });
+    }
+    console.log("📊 Sesiones cargadas:", results.length);
     res.json(results);
   });
 });
@@ -350,10 +407,19 @@ router.get("/sessions", auth, role("admin"), (req, res) => {
 // ===============================
 router.put("/bloquear/:id", auth, role("admin"), (req, res) => {
   const userId = req.params.id;
+  console.log("🔒 Bloqueando usuario:", userId);
+  
   db.query("UPDATE usuarios SET activo = 0 WHERE id = ?", [userId], (err) => {
-    if (err) return res.status(500).json({ mensaje: "Error bloquear" });
+    if (err) {
+      console.error("❌ Error bloquear:", err);
+      return res.status(500).json({ mensaje: "Error bloquear" });
+    }
     db.query("DELETE FROM sesiones WHERE user_id = ?", [userId], (err) => {
-      if (err) return res.status(500).json({ mensaje: "Error sesiones" });
+      if (err) {
+        console.error("❌ Error sesiones:", err);
+        return res.status(500).json({ mensaje: "Error sesiones" });
+      }
+      console.log("✅ Usuario bloqueado:", userId);
       res.json({ mensaje: "Usuario bloqueado" });
     });
   });
@@ -364,7 +430,11 @@ router.put("/bloquear/:id", auth, role("admin"), (req, res) => {
 // ===============================
 router.get("/todos", auth, role("admin"), (req, res) => {
   db.query("SELECT id, nombre, email, activo, rol FROM usuarios", (err, results) => {
-    if (err) return res.status(500).json({ mensaje: "Error" });
+    if (err) {
+      console.error("❌ Error cargando usuarios:", err);
+      return res.status(500).json({ mensaje: "Error" });
+    }
+    console.log("👥 Usuarios cargados:", results.length);
     res.json(results);
   });
 });
