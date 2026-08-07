@@ -10,6 +10,9 @@
 </head>
 <body>
 
+</head>
+<body>
+
 <header>
     <nav class="menu" aria-label="Menú principal">
         <div class="logo">🐾 Refugio</div>
@@ -33,20 +36,21 @@
 
 <div class="login-wrapper">
     <div class="login-container">
-        <h1>🔐 Iniciar Sesión</h1>
+        <h1>Iniciar Sesión</h1>
 
         <!-- SECCIÓN DE LOGIN (PASO 1) -->
         <div id="loginSection">
-            <input type="email" id="email" placeholder="Correo electrónico" required>
+            <input type="email" id="email" placeholder="Correo electrónico" required autocomplete="email">
             
             <div class="password-container">
-                <input type="password" id="password" placeholder="Contraseña" required>
+                <input type="password" id="password" placeholder="Contraseña" required autocomplete="current-password">
                 <button type="button" class="toggle-password" id="togglePasswordBtn"></button>
             </div>
 
             <!-- CAPTCHA ALEATORIO -->
             <div class="captcha-container">
-                <label>Verificación: ¿Cuánto es <span id="captchaNum1">5</span> + <span id="captchaNum2">3</span>?</label>
+                <label>Verificación de seguridad:</label>
+                <label>¿Cuánto es <strong id="captchaNum1">5</strong> + <strong id="captchaNum2">3</strong>?</label>
                 <input type="number" id="captchaInput" placeholder="Escribe el resultado" required>
                 <input type="hidden" id="captchaResultado" value="8">
             </div>
@@ -54,33 +58,60 @@
             <button type="button" id="loginBtn">Ingresar</button>
 
             <p>¿No tienes cuenta? <a href="registro.html">Registrarse</a></p>
-            <p><a href="recuperar.html" class="forgot-password">¿Olvidaste tu contraseña?</a></p>
+            <a href="recuperar.html" class="forgot-password">¿Olvidaste tu contraseña?</a>
         </div>
 
         <!-- SECCIÓN DEL CÓDIGO (PASO 2) -->
         <div id="codigoSection" style="display: none;">
             <div class="codigo-section">
                 <div class="user-email">
-                     Código enviado a: <strong id="userEmail"></strong>
+                    Código enviado a: <strong id="userEmail"></strong>
                 </div>
                 
+                <p>Ingresa el código de 6 dígitos que recibiste:</p>
                 <input type="text" id="codigo" class="codigo-input" 
-                       placeholder="000000" maxlength="6" autocomplete="off">
+                       placeholder="000000" maxlength="6" autocomplete="off"
+                       pattern="[0-9]{6}" inputmode="numeric">
                 
-                <button type="button" id="verificarBtn">VERIFICAR CÓDIGO</button>
+                <button type="button" id="verificarBtn"> VERIFICAR CÓDIGO</button>
                 
                 <div class="timer">
-                    Tiempo restante: <span id="timer">10:00</span>
+                     Tiempo restante: <span id="timer">10:00</span>
                 </div>
                 
-                <button type="button" class="btn-secondary" id="reenviarCodigo" disabled>Reenviar código</button>
-                <button type="button" class="btn-secondary" id="volverLoginBtn">Volver</button>
+                <button type="button" class="btn-secondary" id="reenviarCodigo" disabled>📨 Reenviar código</button>
+                <button type="button" class="btn-secondary" id="volverLoginBtn">← Volver al inicio de sesión</button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Scripts -->
 <script src="JS/login.js"></script>
 <script src="JS/menu.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Mostrar/ocultar contraseña
+        const toggleBtn = document.getElementById("togglePasswordBtn");
+        const passwordInput = document.getElementById("password");
+        
+        if (toggleBtn && passwordInput) {
+            toggleBtn.addEventListener("click", function() {
+                const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+                passwordInput.setAttribute("type", type);
+                toggleBtn.textContent = type === "password" ? "" : "";
+            });
+        }
+        
+        // Solo permitir números en el campo de código
+        const codigoInput = document.getElementById("codigo");
+        if (codigoInput) {
+            codigoInput.addEventListener("input", function(e) {
+                this.value = this.value.replace(/[^0-9]/g, "");
+            });
+        }
+    });
+</script>
+
 </body>
 </html>

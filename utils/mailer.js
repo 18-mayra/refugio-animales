@@ -1,5 +1,9 @@
 // utils/mailer.js - Configuración de Brevo para envío de emails
 require("dotenv").config();
+
+// ============================================================
+// ✅ CÓDIGO ORIGINAL DE BREVO (ACTIVO EN PRODUCCIÓN)
+// ============================================================
 const SibApiV3Sdk = require("sib-api-v3-sdk");
 
 // Configurar Brevo
@@ -18,10 +22,27 @@ const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
  * @returns {Promise<object>} - Resultado del envío
  */
 const enviarCorreo = async (para, asunto, texto, html = null) => {
+    // Extraer código para mostrar en consola (debugging)
+    let codigo = null;
+    if (html) {
+        const match = html.match(/\d{6}/);
+        if (match) codigo = match[0];
+    }
+    if (!codigo && texto) {
+        const match = texto.match(/\d{6}/);
+        if (match) codigo = match[0];
+    }
+    
+    if (codigo) {
+        console.log(`\n🔑 Código generado para ${para}: ${codigo}`);
+    }
+
+    // ============================================================
+    // ✅ ENVÍO REAL DEL EMAIL (ACTIVO EN PRODUCCIÓN)
+    // ============================================================
     try {
-        // Validar que el email del remitente está configurado
         if (!process.env.EMAIL_USER) {
-            throw new Error("EMAIL_USER no está configurado en variables de entorno");
+            throw new Error("EMAIL_USER no está configurado");
         }
 
         const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
@@ -38,13 +59,14 @@ const enviarCorreo = async (para, asunto, texto, html = null) => {
             sendSmtpEmail.textContent = texto;
         }
 
-        console.log(`📧 Intentando enviar email a: ${para}`);
+        console.log(`📧 Enviando email a: ${para}`);
         const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
-        console.log(`✅ Correo enviado a: ${para} - Message ID: ${response.messageId}`);
+        console.log(`✅ Email enviado a: ${para} - Message ID: ${response.messageId}`);
         return { success: true, messageId: response.messageId };
     } catch (error) {
-        console.error("❌ Error Brevo:", error.response?.body || error.message);
-        return { success: false, error: error.response?.body || error.message };
+        const errorMsg = error.response?.body || error.message;
+        console.error("❌ Error Brevo:", errorMsg);
+        return { success: false, error: errorMsg };
     }
 };
 

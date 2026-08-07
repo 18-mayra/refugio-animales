@@ -100,13 +100,15 @@ app.get("/editar.html", (req, res) => {
 });
 
 // =============================
-// 🌐 CORS
+// 🌐 CORS - ACTUALIZADO PARA RENDER
 // =============================
 const allowedOrigins = [
     "http://localhost:5500",
     "http://127.0.0.1:5500",
     "http://localhost:3000",
-    "https://refugio-animales.onrender.com"
+    "http://127.0.0.1:3000",
+    "https://refugio-animales.onrender.com",      // ✅ Tu dominio de Render
+    "https://www.refugio-animales.onrender.com"   // ✅ Con www
 ];
 
 app.use(cors({
@@ -130,7 +132,7 @@ const csrfProtection = csrf({
     cookie: {
         httpOnly: true,
         sameSite: "lax",
-        secure: false
+        secure: process.env.NODE_ENV === "production" // ✅ true en producción
     }
 });
 
@@ -146,10 +148,10 @@ app.use((req, res, next) => {
         "/api/usuarios/registro",
         "/api/usuarios/login/enviar-codigo",
         "/api/usuarios/login/verificar-codigo",
+        "/api/usuarios/logout",
+        "/api/usuarios/refresh",
         "/api/mfa/send",
         "/api/mfa/verify",
-        "/api/usuarios/refresh",
-        "/api/usuarios/logout",
         "/api/password/recuperar",
         "/api/password/reset",
         "/api/contacto"
@@ -252,7 +254,14 @@ app.use("/api/admin", auth, adminRoutes);
 
 // 3. Rutas con autenticación básica
 app.use("/api/adopciones", auth, adopcionesRoutes);
-app.use("/api/usuarios", usuariosRoutes);
+
+// ============================================================
+// 🔥 IMPORTANTE: El auth está COMENTADO para que las rutas públicas funcionen
+// Las rutas protegidas ya tienen auth dentro de usuarios.js
+// ============================================================
+// app.use("/api/usuarios", auth, usuariosRoutes);  // ← COMENTADO (no se usa)
+app.use("/api/usuarios", usuariosRoutes);  // ← ACTIVO (sin auth, las protegidas tienen auth interno)
+
 app.use("/api/password", passwordRoutes);
 app.use("/api/contacto", contactoRoutes);
 app.use("/api/mfa", mfaRoutes);
@@ -266,9 +275,18 @@ app.use("/api/settings", auth, userSettingsRoutes);
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor en http://localhost:${PORT}`);
-    console.log(`✅ Conectado a MySQL`);
-    console.log(`📧 Brevo configurado - Email: ${process.env.EMAIL_USER}`);
-    console.log(`🧪 Prueba email: http://localhost:${PORT}/test-email`);
-    console.log(`🔐 Modo: ${process.env.NODE_ENV || "development"}`);
+    console.log(`\n╔══════════════════════════════════════════════════╗`);
+    console.log(`║     🐾 REFUGIO DE ANIMALES - SERVIDOR 🐾        ║`);
+    console.log(`╠══════════════════════════════════════════════════╣`);
+    console.log(`║ 🚀 Servidor:    http://localhost:${PORT}              ║`);
+    console.log(`║ ✅ MySQL:       Conectado correctamente          ║`);
+    console.log(`║ 📧 Brevo:       ${process.env.EMAIL_USER?.substring(0, 25) || 'Configurado'}...        ║`);
+    console.log(`║ 🔐 Modo:        ${(process.env.NODE_ENV || "development").padEnd(27)}║`);
+    console.log(`║ ⏰ Inactividad:  2 minutos                       ║`);
+    console.log(`╠══════════════════════════════════════════════════╣`);
+    console.log(`║ 📱 ACCESOS:                                      ║`);
+    console.log(`║    Login:     http://localhost:${PORT}/login.html     ║`);
+    console.log(`║    Registro:  http://localhost:${PORT}/registro.html  ║`);
+    console.log(`║    Test Email: http://localhost:${PORT}/test-email   ║`);
+    console.log(`╚══════════════════════════════════════════════════╝\n`);
 });

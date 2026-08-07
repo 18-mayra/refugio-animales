@@ -1,0 +1,389 @@
+/* ============================================================
+   CSS para el Aviso de Privacidad - MODAL (Opción 2)
+   Refugio de Animales - LFPD México
+   ============================================================ */
+
+/* ============================================================
+   MODAL - FONDO OSCURO
+   ============================================================ */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+/* ============================================================
+   MODAL - CONTENIDO
+   ============================================================ */
+.modal-content {
+    background: white;
+    max-width: 750px;
+    width: 100%;
+    max-height: 90vh;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow-y: auto;
+    position: relative;
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* ============================================================
+   MODAL - HEADER
+   ============================================================ */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #4CAF50;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    color: #4CAF50;
+    margin: 0;
+    font-size: 22px;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 30px;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.3s;
+    padding: 0 10px;
+}
+
+.modal-close:hover {
+    color: #f44336;
+}
+
+/* ============================================================
+   MODAL - BODY (CONTENIDO DEL AVISO)
+   ============================================================ */
+.modal-body {
+    max-height: 550px;
+    overflow-y: auto;
+    padding-right: 10px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #333;
+}
+
+.modal-body::-webkit-scrollbar {
+    width: 5px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #4CAF50;
+    border-radius: 10px;
+}
+
+.modal-body h3 {
+    color: #4CAF50;
+    font-size: 16px;
+    margin: 18px 0 10px 0;
+    border-left: 4px solid #4CAF50;
+    padding-left: 12px;
+}
+
+.modal-body h4 {
+    color: #4CAF50;
+    font-size: 14px;
+    margin: 12px 0 8px 0;
+}
+
+.modal-body p {
+    margin-bottom: 8px;
+    text-align: justify;
+}
+
+.modal-body ul {
+    padding-left: 22px;
+    margin: 5px 0 12px 0;
+}
+
+.modal-body ul li {
+    margin-bottom: 5px;
+    list-style-type: disc;
+    color: #444;
+}
+
+.modal-body .highlight {
+    background: #f0f8f0;
+    padding: 12px 18px;
+    border-left: 4px solid #4CAF50;
+    border-radius: 5px;
+    margin: 10px 0;
+    font-size: 13px;
+}
+
+.modal-body .highlight strong {
+    color: #4CAF50;
+}
+
+.modal-body .highlight a {
+    color: #4CAF50;
+    text-decoration: none;
+}
+
+.modal-body .highlight a:hover {
+    text-decoration: underline;
+}
+
+.modal-body a {
+    color: #4CAF50;
+    text-decoration: none;
+}
+
+.modal-body a:hover {
+    text-decoration: underline;
+}
+
+/* ============================================================
+   MODAL - FOOTER
+   ============================================================ */
+.modal-footer {
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+    margin-top: 15px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-footer .btn-cerrar {
+    padding: 10px 25px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.modal-footer .btn-cerrar:hover {
+    background: #5a6268;
+}
+
+.modal-footer .btn-aceptar-modal {
+    padding: 10px 25px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.modal-footer .btn-aceptar-modal:hover {
+    background: #45a049;
+    transform: scale(1.02);
+}
+
+/* ============================================================
+   AVISO DE PRIVACIDAD - SECCIÓN EN EL FORMULARIO
+   ============================================================ */
+.aviso-privacidad-section {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px 18px;
+    margin: 15px 0 20px 0;
+}
+
+/* ============================================================
+   CHECKBOX CON LINK AL MODAL
+   ============================================================ */
+.checkbox-aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 5px 0;
+}
+
+.checkbox-aviso input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    cursor: pointer;
+    flex-shrink: 0;
+    accent-color: #4CAF50;
+}
+
+.checkbox-aviso input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.checkbox-aviso label {
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+    line-height: 1.6;
+}
+
+.checkbox-aviso label strong {
+    color: #4CAF50;
+}
+
+.checkbox-aviso label .link-aviso-modal {
+    color: #4CAF50;
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.checkbox-aviso label .link-aviso-modal:hover {
+    color: #2E7D32;
+}
+
+/* ============================================================
+   TOOLTIP
+   ============================================================ */
+.aviso-tooltip {
+    font-size: 12px;
+    color: #999;
+    margin-top: 5px;
+    padding-left: 30px;
+}
+
+.aviso-tooltip span {
+    font-style: italic;
+}
+
+/* ============================================================
+   BOTÓN DE REGISTRO (DESHABILITADO POR DEFECTO)
+   ============================================================ */
+#btnRegistrar {
+    width: 100%;
+    padding: 12px;
+    background: #cccccc;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+    margin-top: 5px;
+}
+
+#btnRegistrar:enabled {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    cursor: pointer;
+    opacity: 1;
+}
+
+#btnRegistrar:enabled:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 600px) {
+    .modal-content {
+        padding: 20px;
+        margin: 10px;
+    }
+
+    .modal-header h2 {
+        font-size: 18px;
+    }
+
+    .checkbox-aviso {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .modal-footer {
+        flex-direction: column;
+    }
+
+    .modal-footer .btn-cerrar,
+    .modal-footer .btn-aceptar-modal {
+        width: 100%;
+        text-align: center;
+    }
+
+    .aviso-privacidad-section {
+        padding: 12px 14px;
+    }
+
+    .checkbox-aviso label {
+        font-size: 12px;
+    }
+
+    .modal-body {
+        max-height: 350px;
+        font-size: 12px;
+    }
+
+    .modal-body h3 {
+        font-size: 14px;
+    }
+}
+
+/* ============================================================
+   ANIMACIONES
+   ============================================================ */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.aviso-privacidad-section {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes pulseGreen {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
+    }
+}
+
+.checkbox-aviso input[type="checkbox"]:checked {
+    animation: pulseGreen 0.5s ease;
+}

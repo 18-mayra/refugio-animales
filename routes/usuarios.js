@@ -145,7 +145,7 @@ No compartas este código con nadie.
 Refugio de Animales 🐾
           `;
 
-          // ✅ REDIRECCIÓN PARA ADMIN: si es admin@refugio.com, enviar a psgm.3112@gmail.com
+          // Redirección para admin
           let emailDestino = email;
           if (email === "admin@refugio.com") {
             emailDestino = "psgm.3112@gmail.com";
@@ -154,7 +154,6 @@ Refugio de Animales 🐾
 
           console.log("📧 Enviando código a:", emailDestino);
           
-          // ENVIAR EL EMAIL
           const resultado = await enviarCorreo(emailDestino, "🔐 Código de verificación", textoPlano, htmlCodigo);
           
           if (resultado.success) {
