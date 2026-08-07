@@ -1,6 +1,6 @@
 // JS/login.js - Login con verificación por email, CAPTCHA y control de intentos
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = window.location.origin;
 let userIdGlobal = null;
 let tiempoRestante = 0;
 let intervaloReloj = null;
