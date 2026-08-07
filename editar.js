@@ -101,10 +101,9 @@ async function cargarAnimal() {
         const imgPreview = document.getElementById("imgPreview");
         if (imgPreview) {
             if (imagenUrlActual) {
-                // ✅ CORREGIDO: agregar barra entre API_BASE_URL y la imagen
                 imgPreview.src = imagenUrlActual.startsWith("http")
                     ? imagenUrlActual
-                    : `${API_BASE_URL}/${imagenUrlActual}`;
+                    : `${API_BASE_URL}${imagenUrlActual}`;
             } else {
                 imgPreview.src = `${API_BASE_URL}/img/perro.png`;
             }
