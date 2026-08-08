@@ -174,7 +174,7 @@ Refugio de Animales 🐾
 );
 
 // ===============================
-// VERIFICAR CÓDIGO Y COMPLETAR LOGIN (PASO 2) - CORREGIDO CON LOGS
+// VERIFICAR CÓDIGO Y COMPLETAR LOGIN (PASO 2) - CORREGIDO ✅
 // ===============================
 router.post("/login/verificar-codigo", async (req, res) => {
   const { userId, codigo } = req.body;
@@ -210,10 +210,14 @@ router.post("/login/verificar-codigo", async (req, res) => {
         const usuario = userResult[0];
         console.log("👤 Usuario encontrado:", usuario.id, usuario.email, "Rol:", usuario.rol);
 
-        // Limpiar tokens antiguos
-        console.log("🧹 Limpiando tokens antiguos para usuario:", usuario.id);
+        // ✅ Limpiar tokens antiguos - NO eliminar sesiones activas
         db.query("DELETE FROM refresh_tokens WHERE user_id = ?", [usuario.id]);
-        db.query("DELETE FROM sesiones WHERE user_id = ?", [usuario.id]);
+
+        // ✅ Solo eliminar sesiones expiradas (más de 7 días)
+        db.query(
+          "DELETE FROM sesiones WHERE user_id = ? AND created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)",
+          [usuario.id]
+        );
 
         // Generar ACCESS TOKEN (24 horas)
         const accessToken = jwt.sign(
@@ -245,7 +249,7 @@ router.post("/login/verificar-codigo", async (req, res) => {
         );
 
         // ============================================================
-        // 🔥 GUARDAR SESIÓN - CON LOGS DETALLADOS
+        // 🔥 GUARDAR SESIÓN - CORREGIDO ✅
         // ============================================================
         const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || "0.0.0.0";
         const userAgent = req.headers["user-agent"] || "unknown";
@@ -255,74 +259,86 @@ router.post("/login/verificar-codigo", async (req, res) => {
         console.log(`   - IP: ${ip}`);
         console.log(`   - User-Agent: ${userAgent}`);
 
+        // ✅ Primero verificar si ya existe una sesión activa para este usuario
         db.query(
-          "INSERT INTO sesiones (user_id, token, ip, user_agent) VALUES (?, ?, ?, ?)",
-          [usuario.id, accessToken, ip, userAgent],
-          (err) => {
+          "SELECT id FROM sesiones WHERE user_id = ? AND token = ?",
+          [usuario.id, accessToken],
+          (err, existing) => {
             if (err) {
-              console.error("❌ ERROR GRAVE guardando sesión:", err);
-              console.error("❌ Detalles del error:", err.sqlMessage);
-              console.error("❌ Código de error:", err.code);
-              
-              // ⚠️ No devolvemos error al usuario, pero registramos el error
-              // para que podamos depurar después
-            } else {
-              console.log("✅ Sesión guardada exitosamente para usuario:", usuario.id);
-              
-              // Verificar que se guardó
+              console.error("❌ Error verificando sesión existente:", err);
+            }
+            
+            // Si no existe, insertar nueva sesión
+            if (!existing || existing.length === 0) {
               db.query(
-                "SELECT * FROM sesiones WHERE user_id = ? ORDER BY id DESC LIMIT 1",
-                [usuario.id],
-                (err, result) => {
+                "INSERT INTO sesiones (user_id, token, ip, user_agent) VALUES (?, ?, ?, ?)",
+                [usuario.id, accessToken, ip, userAgent],
+                (err) => {
                   if (err) {
-                    console.error("❌ Error verificando sesión:", err);
-                  } else if (result.length > 0) {
-                    console.log("✅ Verificación: Sesión encontrada en BD - ID:", result[0].id);
+                    console.error("❌ ERROR GRAVE guardando sesión:", err);
+                    console.error("❌ Detalles del error:", err.sqlMessage);
                   } else {
-                    console.log("⚠️ Verificación: Sesión NO encontrada en BD");
+                    console.log("✅ Sesión guardada exitosamente para usuario:", usuario.id);
+                    
+                    // Verificar que se guardó
+                    db.query(
+                      "SELECT * FROM sesiones WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+                      [usuario.id],
+                      (err, result) => {
+                        if (err) {
+                          console.error("❌ Error verificando sesión:", err);
+                        } else if (result.length > 0) {
+                          console.log("✅ VERIFICACIÓN: Sesión encontrada en BD - ID:", result[0].id);
+                        } else {
+                          console.log("⚠️ VERIFICACIÓN: Sesión NO encontrada en BD");
+                        }
+                      }
+                    );
                   }
                 }
               );
+            } else {
+              console.log("✅ Sesión ya existe para usuario:", usuario.id);
             }
-
-            // Enviar notificación de inicio de sesión
-            const htmlNotificacion = `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <h2 style="color: #4CAF50;">✅ Nuevo inicio de sesión</h2>
-                <p>Hola <strong>${usuario.nombre}</strong>,</p>
-                <p>Se ha iniciado sesión en tu cuenta.</p>
-                <p><strong>Detalles:</strong></p>
-                <ul>
-                  <li>📅 Fecha: ${new Date().toLocaleString()}</li>
-                  <li>🌐 IP: ${ip}</li>
-                </ul>
-                <p>Si no fuiste tú, cambia tu contraseña inmediatamente.</p>
-                <hr>
-                <p style="font-size: 12px;">Refugio de Animales 🐾</p>
-              </div>
-            `;
-            
-            enviarCorreo(usuario.email, "✅ Nuevo inicio de sesión", "Se ha iniciado sesión en tu cuenta", htmlNotificacion);
-
-            console.log("✅ Login completado exitosamente para usuario:", usuario.id);
-            
-            res.json({
-              success: true,
-              accessToken,
-              refreshToken,
-              usuario: {
-                id: usuario.id,
-                email: usuario.email,
-                rol: usuario.rol,
-                nombre: usuario.nombre
-              }
-            });
           }
         );
+
+        // Enviar notificación de inicio de sesión
+        const htmlNotificacion = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px;">
+            <h2 style="color: #4CAF50;">✅ Nuevo inicio de sesión</h2>
+            <p>Hola <strong>${usuario.nombre}</strong>,</p>
+            <p>Se ha iniciado sesión en tu cuenta.</p>
+            <p><strong>Detalles:</strong></p>
+            <ul>
+              <li>📅 Fecha: ${new Date().toLocaleString()}</li>
+              <li>🌐 IP: ${ip}</li>
+            </ul>
+            <p>Si no fuiste tú, cambia tu contraseña inmediatamente.</p>
+            <hr>
+            <p style="font-size: 12px;">Refugio de Animales 🐾</p>
+          </div>
+        `;
+        
+        enviarCorreo(usuario.email, "✅ Nuevo inicio de sesión", "Se ha iniciado sesión en tu cuenta", htmlNotificacion);
+
+        console.log("✅ Login completado exitosamente para usuario:", usuario.id);
+        
+        res.json({
+          success: true,
+          accessToken,
+          refreshToken,
+          usuario: {
+            id: usuario.id,
+            email: usuario.email,
+            rol: usuario.rol,
+            nombre: usuario.nombre
+          }
+        });
       });
-    }
-  );
-});
+    });
+  }
+
 
 // ===============================
 // LOGOUT

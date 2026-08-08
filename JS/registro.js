@@ -172,7 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/api/usuarios/registro', {
+            const response = await fetch(`${API_BASE_URL}/api/usuarios/registro`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nombre, email, password })
