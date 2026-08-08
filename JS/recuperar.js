@@ -7,6 +7,25 @@ let userIdGlobal = null;
 let tiempoRestante = 0;
 let intervaloReloj = null;
 
+// ✅ Función para mostrar mensajes en pantalla (NO alerts)
+function mostrarMensaje(msg, tipo) {
+    const el = document.getElementById("mensaje");
+    if (!el) {
+        console.warn("Elemento #mensaje no encontrado");
+        return;
+    }
+    
+    el.textContent = msg;
+    el.className = "mensaje-flotante " + tipo;
+    
+    // Ocultar después de 6 segundos
+    clearTimeout(el._timeout);
+    el._timeout = setTimeout(() => {
+        el.className = "mensaje-flotante";
+        el.textContent = "";
+    }, 6000);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
@@ -22,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const email = document.getElementById("email").value.trim();
         
         if (!email) {
-            alert("❌ Por favor, ingresa tu correo electrónico");
+            mostrarMensaje("❌ Por favor, ingresa tu correo electrónico", "error");
             return;
         }
         
@@ -47,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Guardar userId para el paso 2
             userIdGlobal = data.userId;
             
-            alert(data.message || "📧 Revisa tu correo, recibirás un código de 6 dígitos");
+            mostrarMensaje("📧 Revisa tu correo, recibirás un código de 6 dígitos", "success");
             
             document.getElementById("paso1").style.display = "none";
             document.getElementById("paso2").style.display = "block";
@@ -58,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
         } catch (error) {
             console.error("Error:", error);
-            alert("❌ " + error.message);
+            mostrarMensaje("❌ " + error.message, "error");
         } finally {
             btn.textContent = originalText;
             btn.disabled = false;
@@ -74,22 +93,22 @@ document.addEventListener("DOMContentLoaded", () => {
         const confirmar = document.getElementById("confirmar").value;
         
         if (!codigo || codigo.length !== 6) {
-            alert("❌ Por favor, ingresa el código de 6 dígitos");
+            mostrarMensaje("❌ Por favor, ingresa el código de 6 dígitos", "error");
             return;
         }
         
         if (nueva !== confirmar) {
-            alert("❌ Las contraseñas no coinciden");
+            mostrarMensaje("❌ Las contraseñas no coinciden", "error");
             return;
         }
         
         if (nueva.length < 6) {
-            alert("❌ La contraseña debe tener al menos 6 caracteres");
+            mostrarMensaje("❌ La contraseña debe tener al menos 6 caracteres", "error");
             return;
         }
         
         if (!userIdGlobal) {
-            alert("❌ Error de sesión. Vuelve a intentarlo.");
+            mostrarMensaje("❌ Error de sesión. Vuelve a intentarlo.", "error");
             location.reload();
             return;
         }
@@ -117,12 +136,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(data.message || "Error al restablecer");
             }
             
-            alert("✅ Contraseña actualizada correctamente. Redirigiendo...");
+            mostrarMensaje("✅ Contraseña actualizada correctamente. Redirigiendo...", "success");
             setTimeout(() => { window.location.href = "login.html"; }, 2000);
             
         } catch (error) {
             console.error("Error:", error);
-            alert("❌ " + error.message);
+            mostrarMensaje("❌ " + error.message, "error");
         } finally {
             btn.textContent = originalText;
             btn.disabled = false;
@@ -134,7 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const email = document.getElementById("email").value;
         
         if (!email) {
-            alert("❌ No se pudo reenviar el código");
+            mostrarMensaje("❌ No se pudo reenviar el código", "error");
             return;
         }
         
@@ -156,10 +175,10 @@ document.addEventListener("DOMContentLoaded", () => {
             if (intervaloReloj) clearInterval(intervaloReloj);
             iniciarTemporizador(900);
             
-            alert("📧 Código reenviado. Revisa tu correo.");
+            mostrarMensaje("📧 Código reenviado. Revisa tu correo.", "success");
             
         } catch (error) {
-            alert("❌ " + error.message);
+            mostrarMensaje("❌ " + error.message, "error");
         }
     });
 });

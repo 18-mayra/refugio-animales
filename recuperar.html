@@ -7,6 +7,113 @@
     <link rel="stylesheet" href="CSS/styles.css">
     <link rel="stylesheet" href="CSS/base.css">
     <link rel="stylesheet" href="CSS/animations.css">
+    <style>
+        /* ✅ ESTILOS PARA EL MENSAJE */
+        .mensaje-flotante {
+            display: none;
+            padding: 12px 16px;
+            border-radius: 5px;
+            margin: 15px 0 10px 0;
+            font-size: 14px;
+            text-align: center;
+        }
+        .mensaje-flotante.success {
+            display: block;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+        .mensaje-flotante.error {
+            display: block;
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+        .mensaje-flotante.info {
+            display: block;
+            background: #e3f2fd;
+            color: #0d47a1;
+            border: 1px solid #90caf9;
+        }
+        
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 70vh;
+            padding: 20px;
+        }
+        .login-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+        .login-container h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .login-container p {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .login-container input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .login-container button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .login-container button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .login-container a {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #667eea;
+            text-decoration: none;
+        }
+        .login-container a:hover {
+            text-decoration: underline;
+        }
+        .timer {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 18px;
+            color: #666;
+        }
+        .reenviar-btn {
+            background: #6c757d !important;
+            margin-top: 10px !important;
+        }
+        .reenviar-btn:hover {
+            background: #5a6268 !important;
+        }
+    </style>
 </head>
 <body>
 
@@ -24,28 +131,37 @@
     <div class="login-container">
         <h1>🔐 Recuperar Contraseña</h1>
 
+        <!-- ✅ DIV PARA MENSAJES -->
+        <div id="mensaje" class="mensaje-flotante"></div>
+
         <!-- PASO 1: Solicitar email -->
         <div id="paso1">
             <p>Ingresa tu correo electrónico y te enviaremos un código de 6 dígitos.</p>
             <form id="formEmail">
                 <input type="email" id="email" placeholder="Correo electrónico" required>
-                <button type="submit">📧 Enviar código</button>
+                <button type="submit" id="btnEnviarCodigo">📧 Enviar código</button>
             </form>
         </div>
 
         <!-- PASO 2: Ingresar código y nueva contraseña -->
         <div id="paso2" style="display:none;">
             <p>Ingresa el código de 6 dígitos que recibiste en tu correo y tu nueva contraseña.</p>
+            <div class="user-email" style="background:#e3f2fd; padding:10px; border-radius:5px; margin-bottom:15px; text-align:center;">
+                📧 Código enviado a: <strong id="userEmail"></strong>
+            </div>
             <form id="formReset">
                 <input type="text" id="codigo" placeholder="Código de 6 dígitos" maxlength="6" required>
                 <input type="password" id="nueva" placeholder="Nueva contraseña" required>
                 <input type="password" id="confirmar" placeholder="Confirmar contraseña" required>
-                <button type="submit">🔒 Restablecer contraseña</button>
+                <button type="submit" id="btnRestablecer">🔒 Restablecer contraseña</button>
             </form>
+            <div class="timer">
+                ⏱️ Tiempo restante: <span id="timer">15:00</span>
+            </div>
+            <button id="reenviarCodigo" class="reenviar-btn" disabled>📨 Reenviar código</button>
         </div>
 
-        <div id="mensaje" style="margin-top:20px; text-align:center;"></div>
-        <p><a href="login.html">← Volver al inicio de sesión</a></p>
+        <a href="login.html">← Volver al inicio de sesión</a>
     </div>
 </div>
 
