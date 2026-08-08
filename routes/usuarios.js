@@ -15,18 +15,30 @@ const { body, validationResult } = require("express-validator");
 const SECRET = process.env.JWT_SECRET || "mi_clave_super_secreta";
 
 // ===============================
-// REGISTRO
+// REGISTRO - CON LOGS AGREGADOS
 // ===============================
 router.post("/registro", async (req, res) => {
+  console.log("📝 REGISTRO - Body recibido:", req.body);
+  
   try {
     const { nombre, email, password } = req.body;
+    console.log("📝 Datos:", { nombre, email, password: "***" });
+    
     const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("✅ Password hasheado correctamente");
 
     db.query(
       "INSERT INTO usuarios (nombre, email, password, rol, activo) VALUES (?, ?, ?, 'usuario', 1)",
       [nombre, email, hashedPassword],
       async (err) => {
-        if (err) return res.status(500).json({ mensaje: "Error registro" });
+        if (err) {
+          console.error("❌ ERROR EN INSERT:", err.message);
+          console.error("❌ ERROR SQL:", err.sql);
+          console.error("❌ ERROR COMPLETO:", err);
+          return res.status(500).json({ mensaje: "Error registro" });
+        }
+        
+        console.log("✅ Usuario insertado correctamente");
         
         try {
           const htmlBienvenida = `
@@ -54,7 +66,9 @@ router.post("/registro", async (req, res) => {
         res.json({ mensaje: "Usuario registrado correctamente" });
       }
     );
-  } catch {
+  } catch (error) {
+    console.error("❌ ERROR CATCH:", error.message);
+    console.error("❌ ERROR COMPLETO:", error);
     res.status(500).json({ mensaje: "Error servidor" });
   }
 });
