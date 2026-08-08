@@ -79,7 +79,6 @@ function tieneLetrasConsecutivas(password) {
 function actualizarRequisitosUI(password) {
     const validacion = validarPasswordFrontend(password);
     
-    // Actualizar cada requisito en la UI (si existen los elementos)
     const req1 = document.getElementById("req1");
     const req2 = document.getElementById("req2");
     const req3 = document.getElementById("req3");
@@ -157,7 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // ✅ VALIDACIÓN COMPLETA DE CONTRASEÑA (igual que en el backend)
+        // ✅ VALIDACIÓN COMPLETA DE CONTRASEÑA
         const validacion = validarPasswordFrontend(password);
         if (!validacion.isValid) {
             alert("❌ La contraseña no cumple con los requisitos:\n" + validacion.errors.join("\n"));
@@ -181,6 +180,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (!response.ok) {
+                // ✅ Mostrar mensaje específico del servidor (ej: correo duplicado)
+                if (data.mensaje) {
+                    throw new Error(data.mensaje);
+                }
                 if (data.detalles) {
                     throw new Error(data.detalles.join("\n"));
                 }
@@ -191,7 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
             window.location.href = "login.html";
         } catch (error) {
             console.error("❌ ERROR:", error);
-            alert("❌ Error al registrar:\n" + error.message);
+            alert("❌ " + error.message);
             if (submitBtn) {
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;

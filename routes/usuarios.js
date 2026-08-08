@@ -15,7 +15,7 @@ const { body, validationResult } = require("express-validator");
 const SECRET = process.env.JWT_SECRET || "mi_clave_super_secreta";
 
 // ===============================
-// REGISTRO - CON LOGS AGREGADOS
+// REGISTRO - CON VALIDACIÓN DE CORREO DUPLICADO ✅
 // ===============================
 router.post("/registro", async (req, res) => {
   console.log("📝 REGISTRO - Body recibido:", req.body);
@@ -33,8 +33,14 @@ router.post("/registro", async (req, res) => {
       async (err) => {
         if (err) {
           console.error("❌ ERROR EN INSERT:", err.message);
-          console.error("❌ ERROR SQL:", err.sql);
-          console.error("❌ ERROR COMPLETO:", err);
+          
+          // ✅ Verificar si el error es por correo duplicado
+          if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ 
+              mensaje: "El correo electrónico ya está registrado. Por favor, utiliza otro correo o inicia sesión." 
+            });
+          }
+          
           return res.status(500).json({ mensaje: "Error registro" });
         }
         
@@ -110,11 +116,14 @@ router.post(
         return res.status(401).json({ mensaje: "Credenciales incorrectas" });
       }
 
+      // Eliminar códigos anteriores no usados
       db.query("DELETE FROM codigos_verificacion WHERE user_id = ? AND usado = FALSE", [usuario.id]);
 
+      // Generar código de 6 dígitos
       const codigo = Math.floor(100000 + Math.random() * 900000).toString();
-      const expires = new Date(Date.now() + 10 * 60 * 1000);
+      const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
 
+      // Guardar código en la base de datos
       db.query(
         "INSERT INTO codigos_verificacion (user_id, codigo, expires_at) VALUES (?, ?, ?)",
         [usuario.id, codigo, expires],
@@ -124,6 +133,7 @@ router.post(
             return res.status(500).json({ error: "Error al generar código" });
           }
 
+          // Preparar email HTML
           const htmlCodigo = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
               <h2 style="color: #4CAF50;">🔐 Código de verificación</h2>
@@ -155,6 +165,7 @@ No compartas este código con nadie.
 Refugio de Animales 🐾
           `;
 
+          // Redirección para admin
           let emailDestino = email;
           if (email === "admin@refugio.com") {
             emailDestino = "psgm.3112@gmail.com";
@@ -206,8 +217,10 @@ router.post("/login/verificar-codigo", async (req, res) => {
 
       console.log("✅ Código válido para usuario:", userId);
 
+      // Marcar código como usado
       db.query("UPDATE codigos_verificacion SET usado = TRUE WHERE id = ?", [result[0].id]);
 
+      // Obtener datos del usuario
       db.query("SELECT * FROM usuarios WHERE id = ?", [userId], async (err, userResult) => {
         if (err || userResult.length === 0) {
           console.log("❌ Usuario no encontrado:", userId);
@@ -217,13 +230,16 @@ router.post("/login/verificar-codigo", async (req, res) => {
         const usuario = userResult[0];
         console.log("👤 Usuario encontrado:", usuario.id, usuario.email, "Rol:", usuario.rol);
 
+        // Limpiar tokens antiguos - NO eliminar sesiones activas
         db.query("DELETE FROM refresh_tokens WHERE user_id = ?", [usuario.id]);
 
+        // Solo eliminar sesiones expiradas (más de 7 días)
         db.query(
           "DELETE FROM sesiones WHERE user_id = ? AND created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)",
           [usuario.id]
         );
 
+        // Generar ACCESS TOKEN (24 horas)
         const accessToken = jwt.sign(
           { id: usuario.id, rol: usuario.rol, nombre: usuario.nombre, email: usuario.email },
           SECRET,
@@ -231,6 +247,7 @@ router.post("/login/verificar-codigo", async (req, res) => {
         );
         console.log("🔑 Access Token generado para usuario:", usuario.id);
 
+        // Generar REFRESH TOKEN (30 días)
         const refreshToken = jwt.sign(
           { id: usuario.id },
           SECRET,
@@ -238,6 +255,7 @@ router.post("/login/verificar-codigo", async (req, res) => {
         );
         console.log("🔄 Refresh Token generado para usuario:", usuario.id);
 
+        // Guardar refresh token
         db.query(
           "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))",
           [usuario.id, refreshToken],
@@ -250,6 +268,7 @@ router.post("/login/verificar-codigo", async (req, res) => {
           }
         );
 
+        // Guardar sesión
         const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || "0.0.0.0";
         const userAgent = req.headers["user-agent"] || "unknown";
         
@@ -297,6 +316,7 @@ router.post("/login/verificar-codigo", async (req, res) => {
               console.log("✅ Sesión ya existe para usuario:", usuario.id);
             }
 
+            // Enviar notificación de inicio de sesión
             const htmlNotificacion = `
               <div style="font-family: Arial, sans-serif; max-width: 600px;">
                 <h2 style="color: #4CAF50;">✅ Nuevo inicio de sesión</h2>
