@@ -72,8 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("paso2").style.display = "block";
             document.getElementById("userEmail").textContent = email;
             
-            // Iniciar temporizador de 15 minutos
-            iniciarTemporizador(900);
+            // Iniciar temporizador de 3 minutos
+            iniciarTemporizador(180);
             
         } catch (error) {
             console.error("Error:", error);
@@ -173,9 +173,9 @@ document.addEventListener("DOMContentLoaded", () => {
             userIdGlobal = data.userId;
             
             if (intervaloReloj) clearInterval(intervaloReloj);
-            iniciarTemporizador(900);
+            iniciarTemporizador(180);
             
-            mostrarMensaje("📧 Código reenviado. Revisa tu correo.", "success");
+            mostrarMensaje("Código reenviado. Revisa tu correo.", "success");
             
         } catch (error) {
             mostrarMensaje("❌ " + error.message, "error");
