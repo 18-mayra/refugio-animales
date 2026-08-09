@@ -41,9 +41,6 @@ async function verificarSesionActiva(token, usuario) {
         });
         
         if (response.ok) {
-            // ✅ El control de inactividad se inicia automáticamente en control-inactividad.js
-            // No lo llamamos aquí para evitar duplicados
-            
             if (usuario.rol === "admin" || usuario.rol === "superadmin") {
                 window.location.href = "/admin.html";
             } else {
@@ -151,7 +148,8 @@ async function enviarCredenciales() {
         document.getElementById("codigoSection").style.display = "block";
         document.getElementById("userEmail").textContent = email;
 
-        iniciarTemporizador(600);
+        // ✅ CAMBIADO A 3 MINUTOS (180 segundos)
+        iniciarTemporizador(180);
         alert("📧 Código enviado a tu correo electrónico (revisa la consola del servidor)");
         
     } catch (error) {
@@ -203,9 +201,6 @@ async function verificarCodigo() {
         localStorage.setItem("accessToken", data.accessToken);
         localStorage.setItem("usuario", JSON.stringify(data.usuario));
 
-        // ✅ El control de inactividad se iniciará automáticamente en la siguiente página
-        // No lo llamamos aquí para evitar duplicados
-
         alert("✅ Login exitoso");
 
         const rol = data.usuario.rol;
@@ -251,7 +246,9 @@ async function reenviarCodigo() {
         userIdGlobal = data.userId;
 
         if (intervaloReloj) clearInterval(intervaloReloj);
-        iniciarTemporizador(600);
+        
+        // ✅ CAMBIADO A 3 MINUTOS (180 segundos)
+        iniciarTemporizador(180);
         
         alert("📧 Código reenviado (revisa la consola del servidor)");
         
